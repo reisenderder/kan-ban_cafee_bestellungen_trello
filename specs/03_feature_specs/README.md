@@ -26,6 +26,7 @@ Feature Specs отвечают на вопрос: как должна вести
 8. `Feature_Returned_Order_Discount.md` - возвращенный заказ и повторная продажа со скидкой.
 9. `Feature_Admin_Control.md` - администраторский контроль, роли, права и журналы.
 10. `Feature_Order_Statuses.md` - единая логика статусов заказа.
+11. `Feature_Client_Tracking.md` - клиентское отслеживание заказа.
 
 ## Что добавлять дальше
 
