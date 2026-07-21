@@ -18,6 +18,7 @@ Feature Specs отвечают на вопрос: как должна вести
 
 1. `Feature_Order_Entry.md` - веб-витрина, корзина и оформление заказа.
 2. `Feature_Contact_Confirmation.md` - подтверждение Telegram и Email.
+3. `Feature_Menu_Management.md` - управление меню и доступностью блюд.
 
 ## Что добавлять дальше
 
