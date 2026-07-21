@@ -30,6 +30,7 @@ Feature Specs отвечают на вопрос: как должна вести
 12. `Feature_Client_Chat.md` - чат клиента по номеру заказа.
 13. `Feature_Kitchen_Ticket.md` - кухонный чек и ручная готовность.
 14. `Feature_Payment_Flow.md` - оплата заказа.
+15. `Feature_Route_Batching.md` - попутная доставка и группировка маршрута.
 
 ## Что добавлять дальше
 
