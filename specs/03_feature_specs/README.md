@@ -20,6 +20,7 @@ Feature Specs отвечают на вопрос: как должна вести
 2. `Feature_Contact_Confirmation.md` - подтверждение Telegram и Email.
 3. `Feature_Menu_Management.md` - управление меню и доступностью блюд.
 4. `Feature_Order_CRM.md` - CRM менеджера и обработка заказа.
+5. `Feature_Courier_Delivery.md` - курьер, доставка и подтверждение доставки.
 
 ## Что добавлять дальше
 
