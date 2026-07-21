@@ -21,6 +21,7 @@ Feature Specs отвечают на вопрос: как должна вести
 3. `Feature_Menu_Management.md` - управление меню и доступностью блюд.
 4. `Feature_Order_CRM.md` - CRM менеджера и обработка заказа.
 5. `Feature_Courier_Delivery.md` - курьер, доставка и подтверждение доставки.
+6. `Feature_Resolution_Department.md` - отдел урегулирования, желтый и красный список.
 
 ## Что добавлять дальше
 
