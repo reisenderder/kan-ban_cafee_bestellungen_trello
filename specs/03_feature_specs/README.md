@@ -23,6 +23,7 @@ Feature Specs отвечают на вопрос: как должна вести
 5. `Feature_Courier_Delivery.md` - курьер, доставка и подтверждение доставки.
 6. `Feature_Resolution_Department.md` - отдел урегулирования, желтый и красный список.
 7. `Feature_Complaints.md` - жалобы клиента и результат обработки.
+8. `Feature_Returned_Order_Discount.md` - возвращенный заказ и повторная продажа со скидкой.
 
 ## Что добавлять дальше
 
