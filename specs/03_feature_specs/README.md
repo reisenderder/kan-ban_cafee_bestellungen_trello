@@ -28,6 +28,7 @@ Feature Specs отвечают на вопрос: как должна вести
 10. `Feature_Order_Statuses.md` - единая логика статусов заказа.
 11. `Feature_Client_Tracking.md` - клиентское отслеживание заказа.
 12. `Feature_Client_Chat.md` - чат клиента по номеру заказа.
+13. `Feature_Kitchen_Ticket.md` - кухонный чек и ручная готовность.
 
 ## Что добавлять дальше
 
