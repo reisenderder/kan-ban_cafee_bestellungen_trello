@@ -22,6 +22,7 @@ Feature Specs отвечают на вопрос: как должна вести
 4. `Feature_Order_CRM.md` - CRM менеджера и обработка заказа.
 5. `Feature_Courier_Delivery.md` - курьер, доставка и подтверждение доставки.
 6. `Feature_Resolution_Department.md` - отдел урегулирования, желтый и красный список.
+7. `Feature_Complaints.md` - жалобы клиента и результат обработки.
 
 ## Что добавлять дальше
 
