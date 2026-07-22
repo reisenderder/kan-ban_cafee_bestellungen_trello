@@ -1,6 +1,6 @@
 # Check Report: Все User Stories
 
-> **Статус**: Черновик проверки
+> **Статус**: Проверено
 > **Дата проверки**: 2026-07-22
 > **Проверяемый раздел**: `specs/06_user_stories/`
 > **Цель проверки**: сверить весь слой User Stories с Feature Specs, Technical Specs и правилами `specs/RULES.md` перед переходом к Work Plans.
@@ -112,7 +112,7 @@
 3. Меню и доступность блюд.
 4. Скидочные товары.
 
-Рекомендуемый первый Work Plan:
+Первый Work Plan уже подготовлен:
 
 `Work_Plan_MVP_Order_Flow.md`
 
