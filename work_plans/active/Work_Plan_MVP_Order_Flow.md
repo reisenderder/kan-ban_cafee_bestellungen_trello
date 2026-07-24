@@ -1,9 +1,9 @@
 # Work Plan: MVP-поток заказа
 
-> **Статус**: Готов к первому коду после технических решений
+> **Статус**: Активный — готов к первому коду после технических решений
 > **Дата создания**: 2026-07-22
 > **Версия**: 0.1
-> **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/`, `../04_technical_specs/`, `../06_user_stories/User_Stories_MVP_Order_Flow.md`, `../06_user_stories/User_Stories_All_Check_Report.md`
+> **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow.md`, `../../specs/06_user_stories/User_Stories_All_Check_Report.md`
 
 ---
 
@@ -107,8 +107,8 @@
 Критерии готовности:
 
 * роли и разделы соответствуют спецификациям;
-* сущности не противоречат `../04_technical_specs/Technical_Order_Data_Model.md`;
-* статусы соответствуют `../03_feature_specs/Feature_Order_Statuses.md`;
+* сущности не противоречат `../../specs/04_technical_specs/Technical_Order_Data_Model.md`;
+* статусы соответствуют `../../specs/03_feature_specs/Feature_Order_Statuses.md`;
 * нет реализации функций, не описанных в specs.
 
 ---
@@ -369,7 +369,7 @@
 7. правила журналирования;
 8. способ ручной платежной ссылки.
 
-Эти блокеры закрыты в `../04_technical_specs/Technical_MVP_Implementation_Decisions.md`. Если перед кодом появится новое техническое решение, оно должно быть добавлено в Technical Specs до реализации.
+Эти блокеры закрыты в `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`. Если перед кодом появится новое техническое решение, оно должно быть добавлено в Technical Specs до реализации.
 
 ---
 
@@ -378,7 +378,7 @@
 План готов к переходу в код, если:
 
 * команда принимает границы MVP;
-* все блокеры из раздела 7 закрыты отдельным решением: `../04_technical_specs/Technical_MVP_Implementation_Decisions.md`;
+* все блокеры из раздела 7 закрыты отдельным решением: `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`;
 * первый релиз не включает функции из раздела 3.2;
 * реализация не нарушает минимизацию доступа к клиентским данным;
 * Work Plan не используется для добавления неописанных функций.

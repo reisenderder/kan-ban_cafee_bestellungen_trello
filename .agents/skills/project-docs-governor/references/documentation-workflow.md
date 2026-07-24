@@ -41,8 +41,9 @@
 | Конкретное поведение функции и бизнес-правило | `specs/03_feature_specs/` |
 | Модель данных, правило доступа, security mechanism, API behavior, architecture decision | `specs/04_technical_specs/` |
 | Сценарий, критерии приемки, edge case, путь пользователя | `specs/06_user_stories/` |
-| Порядок реализации, зависимости, readiness gates | `specs/07_work_plans/` |
-| Навигация раздела и список текущих документов | `README.md` внутри соответствующей папки specs |
+| Порядок реализации, зависимости, readiness gates | `work_plans/` |
+| Хронология фактически завершенных работ по областям проекта | `roadmap/` |
+| Навигация раздела и список текущих документов | `README.md` внутри соответствующего раздела |
 | Правила процесса AI-агентов | `.agents/` |
 
 ## Required Reading By Task Type
@@ -92,11 +93,21 @@
 
 Читай:
 
-1. `specs/07_work_plans/Work_Plan_MVP_Order_Flow.md`;
+1. `work_plans/active/Work_Plan_MVP_Order_Flow.md`;
 2. `specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`;
 3. the Technical Spec for the feature being implemented.
 
 Код можно начинать только когда соответствующий blocker закрыт и ожидаемое поведение покрыто.
+
+### Completed Work Plan
+
+Читай:
+
+1. завершенный Work Plan;
+2. `roadmap/README.md`;
+3. соответствующие журналы областей в `roadmap/`.
+
+После подтверждения пользователя и до Git-публикации перемести план в `work_plans/completed/`, обнови его статус и добавь записи о фактически выполненных работах во все затронутые журналы roadmap.
 
 ## Next-Step Algorithm
 

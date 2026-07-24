@@ -3,7 +3,7 @@
 > **Статус**: Зафиксировано для MVP перед кодом
 > **Дата создания**: 2026-07-22
 > **Версия**: 0.1
-> **Источник**: `../07_work_plans/Work_Plan_MVP_Order_Flow.md`, `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`
+> **Источник**: `../../work_plans/active/Work_Plan_MVP_Order_Flow.md`, `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`
 
 ---
 
@@ -257,7 +257,7 @@ QR нельзя использовать повторно и нельзя исп
 
 ## 13. Закрытие блокеров Work Plan
 
-Блокеры из `../07_work_plans/Work_Plan_MVP_Order_Flow.md` закрываются так:
+Блокеры из `../../work_plans/active/Work_Plan_MVP_Order_Flow.md` закрываются так:
 
 | Блокер | Решение |
 | --- | --- |
