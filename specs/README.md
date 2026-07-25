@@ -1,7 +1,7 @@
 # Карта спецификаций проекта
 
 > **Методология**: сначала спецификации, потом планы, потом код.
-> **Текущий статус**: Global Spec, Functional Map, основной набор Feature Specs, Technical Specs, User Stories, первый Work Plan и технические решения перед кодом зафиксированы; следующий слой перед UI-кодом - Visual Rules/Skills.
+> **Текущий статус**: подготовка к коду выполняется по `../work_plans/active/Work_Plan_Code_Readiness.md`; код заблокирован до завершения всех семи групп этого плана.
 
 ---
 
@@ -49,7 +49,8 @@
 
 ## 6. Следующие действия после чтения
 
-1. Прочитать `../work_plans/active/Work_Plan_MVP_Order_Flow.md`.
-2. Прочитать `04_technical_specs/Technical_MVP_Implementation_Decisions.md`.
-3. Подготовить `05_visual_rules_skills/` перед реализацией UI.
-4. После Visual Rules перейти к подготовке первого кода MVP.
+1. Прочитать `../work_plans/active/Work_Plan_Code_Readiness.md`.
+2. Выполнить первую незавершенную группу этого плана в указанной для нее ветке.
+3. Использовать `../work_plans/active/Work_Plan_MVP_Order_Flow.md` и `04_technical_specs/Technical_MVP_Implementation_Decisions.md` как связанные документы, которые будут актуализированы на соответствующих группах.
+4. Подготовить `05_visual_rules_skills/` в группе 7.
+5. Переходить к первому коду MVP только после завершения всего Code Readiness Work Plan и явного подтверждения пользователя.
