@@ -1,9 +1,9 @@
 # Feature Spec: Администраторский контроль
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `Feature_Menu_Management.md`, `Feature_Complaints.md`, `Feature_Returned_Order_Discount.md`, `Feature_Resolution_Department.md`
 
 ---

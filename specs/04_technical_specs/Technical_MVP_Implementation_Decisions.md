@@ -1,9 +1,9 @@
 # Technical Spec: Решения перед реализацией MVP
 
-> **Статус**: Черновик — ожидает актуализации в группе 3
+> **Статус**: Проверено для группы 2 — ожидает архитектурной фиксации в группе 3
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`
 > **Связанный Work Plan**: `../../work_plans/active/Work_Plan_MVP_Order_Flow.md` — ссылка для трассировки блокеров; Work Plan не является источником технических решений.
 

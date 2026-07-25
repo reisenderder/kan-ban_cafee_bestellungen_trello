@@ -1,9 +1,9 @@
 # Technical Spec: Модель данных заказа
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`
 
 ---

@@ -1,9 +1,9 @@
 # Check Report: MVP-поток заказа
 
-> **Статус**: Проверено
-> **Дата проверки**: 2026-07-22
+> **Статус**: Проверено и актуализировано (Группа 2)
+> **Дата проверки**: 2026-07-25
 > **Проверяемый документ**: `User_Stories_MVP_Order_Flow.md`
-> **Цель проверки**: сверить 13 User Stories MVP-потока заказа с Feature Specs и Technical Specs перед переходом к Work Plans.
+> **Цель проверки**: сверить 13 User Stories MVP-потока заказа с Feature Specs и Technical Specs в рамках финализации Группы 2 генерального плана `Work_Plan_Code_Readiness.md`.
 
 ---
 

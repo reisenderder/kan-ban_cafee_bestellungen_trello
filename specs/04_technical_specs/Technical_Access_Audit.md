@@ -1,9 +1,9 @@
 # Technical Spec: Доступы, маскирование данных и аудит
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Order_CRM.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Complaints.md`, `../03_feature_specs/Feature_Client_Chat.md`, `../03_feature_specs/Feature_Route_Batching.md`
 
 ---

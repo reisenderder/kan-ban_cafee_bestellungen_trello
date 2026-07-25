@@ -1,9 +1,9 @@
 # Feature Spec: Отдел урегулирования
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `Feature_Order_Entry.md`, `Feature_Contact_Confirmation.md`, `Feature_Order_CRM.md`, `Feature_Courier_Delivery.md`
 
 ---

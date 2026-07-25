@@ -1,9 +1,9 @@
 # User Stories: Скидочные товары и административные права
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Returned_Order_Discount.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Payment_Flow.md`
 
 ---

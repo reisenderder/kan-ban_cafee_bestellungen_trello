@@ -1,9 +1,9 @@
 # User Stories: MVP-поток заказа
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Contact_Confirmation.md`, `../03_feature_specs/Feature_Order_CRM.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `../03_feature_specs/Feature_Client_Tracking.md`, `../03_feature_specs/Feature_Client_Chat.md`, `../03_feature_specs/Feature_Payment_Flow.md`, `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Returned_Order_Discount.md`, `../03_feature_specs/Feature_Complaints.md`, `../04_technical_specs/Technical_Order_Data_Model.md`, `../04_technical_specs/Technical_Access_Audit.md`, `../04_technical_specs/Technical_Payment_Delivery.md`, `../04_technical_specs/Technical_Risk_Resolution.md`
 
 ---

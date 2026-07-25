@@ -1,8 +1,9 @@
 # Technical Spec: Клиентская страница заказа и чат
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
-> **Версия**: 0.1
+> **Дата обновления**: 2026-07-25
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Client_Tracking.md`, `../03_feature_specs/Feature_Client_Chat.md`, `../03_feature_specs/Feature_Order_Entry.md`
 
 ---

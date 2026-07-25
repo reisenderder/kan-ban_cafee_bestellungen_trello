@@ -1,9 +1,9 @@
 # Technical Spec: Оплата, QR и закрытие доставки
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Payment_Flow.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `../03_feature_specs/Feature_Order_Statuses.md`
 
 ---
