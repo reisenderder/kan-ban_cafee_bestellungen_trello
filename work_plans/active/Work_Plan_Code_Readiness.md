@@ -1,8 +1,8 @@
 # Work Plan: Подготовка проекта к написанию кода
 
-> **Статус**: Активный — завершена группа 4, готова группа 5
+> **Статус**: Активный — завершена группа 5, готова группа 6
 > **Дата создания**: 2026-07-25
-> **Версия**: 0.4
+> **Версия**: 0.5
 > **Целевая платформа**: Vercel + Supabase
 > **Источник**: `../../README.md`, `../../specs/RULES.md`, `../../specs/README.md`, `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, `Work_Plan_MVP_Order_Flow.md`
 
@@ -52,8 +52,8 @@
 | 1 | Governance и workflow | `docs/governance-workflow-alignment` | Завершена — PR #30 смержен | Единый lifecycle, корректная навигация и отсутствие циклических источников |
 | 2 | Согласованность продуктовых спецификаций | `docs/product-spec-consistency` | Завершена — PR #32 смержен | Продуктовые конфликты закрыты, статусы `Проверено` зафиксированы |
 | 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Завершена — PR #33 смержен | Зафиксированы целевой стек Vercel + Supabase и единство миграций |
-| 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Завершена — определены schemas, RLS default-deny, Auth lifecycle, Service Role и миграции | Определены schema, migrations, RLS, Auth, secrets и матрица доступа |
-| 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Ожидает | Критические операции атомарны и идемпотентны, интеграции имеют безопасные контракты |
+| 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Завершена — PR #34 смержен | Определены schemas, RLS default-deny, Auth lifecycle, Service Role и миграции |
+| 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Завершена — зафиксированы атомарность, идемпотентность, single-use QR, OTP adapters и Vercel Cron | Критические операции атомарны и идемпотентны, интеграции имеют безопасные контракты |
 | 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Ожидает | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
 | 7 | Visual Rules и итоговая готовность к коду | `docs/visual-rules-code-readiness` | Ожидает | Visual Rules утверждены, Work Plans синхронизированы, финальный аудит пройден |
 
@@ -231,6 +231,20 @@
 * production не может случайно использовать fake OTP;
 * внешние интеграции имеют явные timeout, retry, audit и failure rules;
 * все решения согласованы с Feature Specs и User Stories.
+
+Результат реализации группы 5 на 2026-07-26:
+
+* зафиксированы атомарные транзакции PostgreSQL (`BEGIN ... COMMIT`) и защита от гонок (`SELECT ... FOR UPDATE`) при смене статусов заказов;
+* определена идемпотентность операции через `idempotency_key` (повторный запрос возвращает исходный результат без дублирования сайд-эффектов);
+* зафиксирован одноразовый механизм подтверждения доставки по SHA-256 хэшу QR-токена в `private.delivery_confirmation_tokens` с атомарным гашением `is_used = true`;
+* определен обязательный защитный fallback-сценарий подтверждения доставки курьером/менеджером с минимальной строкой причины `fallback_reason` (10+ символов) и обязательной фиксацией в `AuditLog`;
+* разделены адаптеры OTP: `DevelopmentOtpAdapter` (вывод в консоль разработчика) и `ProductionOtpAdapter` (реальный Telegram Bot API / SMTP с 3 повторными попытками); зафиксирован абсолютный запрет публикации OTP в логах;
+* описан регламент фоновых Cron-задач Vercel (`cleanup-expired-tokens`, `archive-chats` через 30 дней);
+* актуализированы технические спецификации `Technical_Order_CRM_Workflow.md`, `Technical_Client_Verification.md` и `Technical_Payment_Delivery.md`.
+
+Группа 5 официально завершена.
+
+Следующий шаг: перейти к Группе 6 («Deployment, тестирование и CI») в отдельной ветке `docs/deployment-testing-ci`.
 
 ---
 
