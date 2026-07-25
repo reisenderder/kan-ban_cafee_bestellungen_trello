@@ -1,9 +1,9 @@
 # User Stories: Администрирование, доступы и контроль
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Complaints.md`, `../03_feature_specs/Feature_Returned_Order_Discount.md`, `../04_technical_specs/Technical_Access_Audit.md`, `../04_technical_specs/Technical_Admin_Complaints.md`
 
 ---

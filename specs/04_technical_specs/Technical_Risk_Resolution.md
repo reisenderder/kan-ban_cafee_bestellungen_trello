@@ -1,9 +1,9 @@
 # Technical Spec: Риски, урегулирование и списки
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Contact_Confirmation.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `Technical_Access_Audit.md`
 
 ---

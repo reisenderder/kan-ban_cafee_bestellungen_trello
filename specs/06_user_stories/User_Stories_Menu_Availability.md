@@ -1,9 +1,9 @@
 # User Stories: Меню и доступность блюд
 
-> **Статус**: Черновик
+> **Статус**: Проверено
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 1.0
 > **Источник**: `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../04_technical_specs/Technical_Order_Data_Model.md`
 
 ---

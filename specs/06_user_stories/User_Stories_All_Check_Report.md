@@ -1,9 +1,9 @@
 # Check Report: Все User Stories
 
-> **Статус**: Проверено
-> **Дата проверки**: 2026-07-22
+> **Статус**: Проверено и актуализировано (Группа 2)
+> **Дата проверки**: 2026-07-25
 > **Проверяемый раздел**: `specs/06_user_stories/`
-> **Цель проверки**: сверить весь слой User Stories с Feature Specs, Technical Specs и правилами `specs/RULES.md` перед переходом к Work Plans.
+> **Цель проверки**: сверить весь слой User Stories с Feature Specs, Technical Specs и правилами `specs/RULES.md` в рамках финализации Группы 2 генерального плана `Work_Plan_Code_Readiness.md`.
 
 ---
 
