@@ -4,6 +4,7 @@
 > **Дата создания**: 2026-07-22
 > **Версия**: 0.1
 > **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow.md`, `../../specs/06_user_stories/User_Stories_All_Check_Report.md`
+> **Технические решения перед кодом**: `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`
 
 ---
 

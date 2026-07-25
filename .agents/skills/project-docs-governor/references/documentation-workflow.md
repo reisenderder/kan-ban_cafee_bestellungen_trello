@@ -31,6 +31,7 @@
 6. Сделай ограниченные правки.
 7. Проверь измененные документы.
 8. Сообщи результат перед Git-действиями.
+9. Если Work Plan разделен на группы, выполняй одну группу в отдельной ветке от актуального `main`; следующую группу начинай после merge предыдущей и синхронизации `main`.
 
 ## Where To Put Information
 
@@ -93,11 +94,12 @@
 
 Читай:
 
-1. `work_plans/active/Work_Plan_MVP_Order_Flow.md`;
-2. `specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`;
-3. the Technical Spec for the feature being implemented.
+1. `work_plans/active/Work_Plan_Code_Readiness.md`, если он остается активным;
+2. `work_plans/active/Work_Plan_MVP_Order_Flow.md`;
+3. `specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`;
+4. the Technical Spec for the feature being implemented.
 
-Код можно начинать только когда соответствующий blocker закрыт и ожидаемое поведение покрыто.
+Пока `Work_Plan_Code_Readiness.md` активен, выполняй его первую незавершенную группу и не создавай код приложения. Код можно начинать только после завершения всего Code Readiness Work Plan, закрытия соответствующего blocker и покрытия ожидаемого поведения.
 
 ### Completed Work Plan
 
@@ -107,7 +109,17 @@
 2. `roadmap/README.md`;
 3. соответствующие журналы областей в `roadmap/`.
 
-После подтверждения пользователя и до Git-публикации перемести план в `work_plans/completed/`, обнови его статус и добавь записи о фактически выполненных работах во все затронутые журналы roadmap.
+Промежуточные commit, push, pull request и merge отдельных групп не завершают активный Work Plan.
+
+Перемещай план в `work_plans/completed/` только после выполнения всех его групп и критериев, ручной проверки итогового результата, явного подтверждения пользователя о завершении всего плана и явного запроса подготовить его финальную публикацию.
+
+После такого подтверждения:
+
+1. перемести план в `work_plans/completed/`;
+2. обнови его статус, индексы и все ссылки;
+3. добавь записи о фактически выполненных работах во все затронутые журналы roadmap;
+4. включи перенос и roadmap в финальный completion commit;
+5. выполни финальный push, после которого pull request готов к merge.
 
 ## Next-Step Algorithm
 
