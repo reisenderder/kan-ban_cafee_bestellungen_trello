@@ -1,18 +1,33 @@
-# Technical Spec: Модель данных заказа
+# Technical Spec: Модель данных заказа (Supabase Schemas & RLS)
 
-> **Статус**: Проверено
+> **Статус**: Проверено и зафиксировано (Группа 4: Данные, Auth и безопасность Supabase)
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-07-25
-> **Версия**: 1.0
-> **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`
+> **Дата обновления**: 2026-07-26
+> **Версия**: 1.1
+> **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`, `Technical_MVP_Implementation_Decisions.md`
 
 ---
 
 ## 1. Назначение
 
-Документ описывает техническую модель основных данных заказа: заказ, корзина, позиции, клиентские данные, статусы, история, платежи, доставка и связи с другими процессами.
+Документ описывает техническую модель данных заказа: схемы PostgreSQL в **Supabase**, RLS-политики доступа, таблицы, индексы, порядок миграций (`supabase/migrations/*.sql`) и механизмы append-only триггеров в рамках Группы 4 плана `../../work_plans/active/Work_Plan_Code_Readiness.md`.
 
-Модель данных должна поддерживать утвержденный продуктовый процесс, но не фиксирует конкретную базу данных, ORM, API или фреймворк.
+---
+
+## 1.1 Схемы данных Supabase и порядок миграций
+
+Служебные схемы Supabase:
+
+1. **`public` schema**: Доменные таблицы, к которым обращаются клиенты через Supabase JS Client под защитой Supabase RLS policies (`orders`, `order_items`, `menu_items`, `client_order_access`, `complaints`, `chat_messages`).
+2. **`private` schema**: Внутренние служебные таблицы, недоступные для прямого клиентского обращения (`verification_requests`, `trusted_channels`, `audit_logs`, `employee_profiles`, `resolution_records`). Обращение выполняется только через Server Actions с использованием Service Role Key.
+
+Порядок накатки миграций (`supabase/migrations/*.sql`):
+
+1. **`00001_enum_types.sql`**: Создание пользовательских типов `ENUM` (`user_role`, `order_status`, `payment_status`, `employee_status`, `complaint_category`, `complaint_status`, `risk_level`).
+2. **`00002_core_tables.sql`**: Создание таблиц `public` и `private` схем с внешними ключами и ограничениями `CHECK`.
+3. **`00003_enable_rls.sql`**: Включение Row Level Security (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`) по принципу **`default deny`**.
+4. **`00004_rls_policies.sql`**: Создание правил RLS для ролей Supabase Auth (`authenticated`, `anon`).
+5. **`00005_indexes_and_triggers.sql`**: Создание индексов, уникальных ограничений и append-only триггеров.
 
 ---
 
