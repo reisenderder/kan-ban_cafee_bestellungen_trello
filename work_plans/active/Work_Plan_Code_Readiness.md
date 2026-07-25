@@ -1,8 +1,8 @@
 # Work Plan: Подготовка проекта к написанию кода
 
-> **Статус**: Активный — завершена группа 3, готова группа 4
+> **Статус**: Активный — завершена группа 4, готова группа 5
 > **Дата создания**: 2026-07-25
-> **Версия**: 0.3
+> **Версия**: 0.4
 > **Целевая платформа**: Vercel + Supabase
 > **Источник**: `../../README.md`, `../../specs/RULES.md`, `../../specs/README.md`, `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, `Work_Plan_MVP_Order_Flow.md`
 
@@ -51,8 +51,8 @@
 | --- | --- | --- | --- | --- |
 | 1 | Governance и workflow | `docs/governance-workflow-alignment` | Завершена — PR #30 смержен | Единый lifecycle, корректная навигация и отсутствие циклических источников |
 | 2 | Согласованность продуктовых спецификаций | `docs/product-spec-consistency` | Завершена — PR #32 смержен | Продуктовые конфликты закрыты, статусы `Проверено` зафиксированы |
-| 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Завершена — зафиксирован стек Vercel + Supabase, исключена Prisma, описаны границы и окружения | Зафиксированы целевой стек, границы компонентов и единственный источник схемы |
-| 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Ожидает | Определены schema, migrations, RLS, Auth, secrets и матрица доступа |
+| 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Завершена — PR #33 смержен | Зафиксированы целевой стек Vercel + Supabase и единство миграций |
+| 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Завершена — определены schemas, RLS default-deny, Auth lifecycle, Service Role и миграции | Определены schema, migrations, RLS, Auth, secrets и матрица доступа |
 | 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Ожидает | Критические операции атомарны и идемпотентны, интеграции имеют безопасные контракты |
 | 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Ожидает | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
 | 7 | Visual Rules и итоговая готовность к коду | `docs/visual-rules-code-readiness` | Ожидает | Visual Rules утверждены, Work Plans синхронизированы, финальный аудит пройден |
@@ -191,6 +191,21 @@
 * отключенный сотрудник теряет доступ по определенному сценарию;
 * privileged key никогда не используется в клиентском коде;
 * для разрешенных операций предусмотрены отрицательные cross-role проверки.
+
+Результат реализации группы 4 на 2026-07-26:
+
+* зафиксировано разделение схем Supabase: публичные таблицы домена в `public`, защищенные служебные таблицы в `private`;
+* определен порядок накатки SQL-миграций (`00001_enum_types.sql` -> `00002_core_tables.sql` -> `00003_enable_rls.sql` -> `00004_rls_policies.sql` -> `00005_indexes_and_triggers.sql`);
+* активирован принцип `default deny` в RLS для всех таблиц; роли `anon` полностью заблокирован прямой доступ к персональным данным, заказам и `AuditLog`;
+* зафиксирован жизненный цикл сотрудников в Supabase Auth с привязкой `auth.jwt() -> 'app_metadata' -> 'role'` и безусловным аннулированием доступа СУБД для статусов `DISABLED` / `ARCHIVED`;
+* разграничена бизнес-верификация клиентов (OTP + токен `ClientOrderAccess`) и авторизованный доступ сотрудников;
+* зафиксированы правила использования Service Role Key строго на сервере Next.js и хранение секретов в Vercel Environment Variables;
+* внедрены append-only SQL-триггеры для защиты журналов от изменений и удалений;
+* спецификации `Technical_Access_Audit.md` и `Technical_Order_Data_Model.md` актуализированы.
+
+Группа 4 официально завершена.
+
+Следующий шаг: перейти к Группе 5 («Надежность домена и интеграций») в отдельной ветке `docs/domain-reliability-integrations`.
 
 ---
 
