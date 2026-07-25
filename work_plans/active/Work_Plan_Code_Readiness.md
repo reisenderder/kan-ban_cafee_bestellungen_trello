@@ -1,8 +1,8 @@
 # Work Plan: Подготовка проекта к написанию кода
 
-> **Статус**: Активный — завершена группа 2, готова группа 3
+> **Статус**: Активный — завершена группа 3, готова группа 4
 > **Дата создания**: 2026-07-25
-> **Версия**: 0.2
+> **Версия**: 0.3
 > **Целевая платформа**: Vercel + Supabase
 > **Источник**: `../../README.md`, `../../specs/RULES.md`, `../../specs/README.md`, `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, `Work_Plan_MVP_Order_Flow.md`
 
@@ -50,8 +50,8 @@
 | № | Группа | Ветка | Статус | Условие перехода |
 | --- | --- | --- | --- | --- |
 | 1 | Governance и workflow | `docs/governance-workflow-alignment` | Завершена — PR #30 смержен | Единый lifecycle, корректная навигация и отсутствие циклических источников |
-| 2 | Согласованность продуктовых спецификаций | `docs/product-spec-consistency` | Завершена — решения утверждены, спецификации и check reports актуализированы | Продуктовые конфликты закрыты, статусы `Проверено` зафиксированы |
-| 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Ожидает | Зафиксированы целевой стек, границы компонентов и единственный источник схемы |
+| 2 | Согласованность продуктовых спецификаций | `docs/product-spec-consistency` | Завершена — PR #32 смержен | Продуктовые конфликты закрыты, статусы `Проверено` зафиксированы |
+| 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Завершена — зафиксирован стек Vercel + Supabase, исключена Prisma, описаны границы и окружения | Зафиксированы целевой стек, границы компонентов и единственный источник схемы |
 | 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Ожидает | Определены schema, migrations, RLS, Auth, secrets и матрица доступа |
 | 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Ожидает | Критические операции атомарны и идемпотентны, интеграции имеют безопасные контракты |
 | 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Ожидает | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
@@ -152,6 +152,19 @@
 * browser-код не получает привилегированные секреты;
 * все новые архитектурные решения сначала зафиксированы в Technical Specs, а Work Plans только используют их;
 * старые или неоднозначные утверждения о backend и инфраструктуре устранены.
+
+Результат реализации группы 3 на 2026-07-25:
+
+* зафиксирован технологический стек: Next.js (App Router) на Vercel + Supabase (PostgreSQL, Auth, RLS, Storage, Realtime);
+* исключена Prisma из стека MVP во избежание конфликтов владения схемой; единственным владельцем миграций зафиксированы Supabase SQL Migrations (`supabase/migrations/*.sql`);
+* дата-аксесс зафиксирован через Supabase JS Client (`@supabase/supabase-js`, `@supabase/ssr`);
+* определены границы ответственности между Next.js Server-side (хэширование, rate limiting, внешние API, audit logs), Supabase Database (целостность данных, RLS default-deny, Realtime) и внешними сервисами (Telegram Bot API, SMTP, Vercel Cron);
+* разделены конфигурации окружений Local, Preview/Staging и Production;
+* спецификация `Technical_MVP_Implementation_Decisions.md` и её индекс в `README.md` актуализированы.
+
+Группа 3 официально завершена.
+
+Следующий шаг: перейти к Группе 4 («Данные, Auth и безопасность Supabase») в отдельной ветке `docs/supabase-data-auth-security`.
 
 ---
 
