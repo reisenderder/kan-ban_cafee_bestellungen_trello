@@ -3,7 +3,7 @@
 > **Статус**: Проверено и зафиксировано (Группа 4: Данные, Auth и безопасность Supabase)
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-26
-> **Версия**: 1.1
+> **Версия**: 1.2
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`, `Technical_MVP_Implementation_Decisions.md`
 
 ---
@@ -23,7 +23,7 @@
 
 Порядок накатки миграций (`supabase/migrations/*.sql`):
 
-1. **`00001_enum_types.sql`**: Создание пользовательских типов `ENUM` (`user_role`, `order_status`, `payment_status`, `employee_status`, `complaint_category`, `complaint_status`, `risk_level`).
+1. **`00001_enum_types.sql`**: Создание пользовательских типов `ENUM` (`user_role`, `order_status`, `payment_status`, `employee_status`, `complaint_category`, `complaint_status`, `risk_level`, `delivery_assignment_status`, `kitchen_ticket_status`).
 2. **`00002_core_tables.sql`**: Создание таблиц `public` и `private` схем с внешними ключами и ограничениями `CHECK`.
 3. **`00003_enable_rls.sql`**: Включение Row Level Security (`ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`) по принципу **`default deny`**.
 4. **`00004_rls_policies.sql`**: Создание правил RLS для ролей Supabase Auth (`authenticated`, `anon`).
@@ -47,6 +47,7 @@
 10. `DeliveryAssignment` - назначение курьера.
 11. `KitchenTicket` - кухонный чек.
 12. `ClientChatThread` - чат клиента по заказу.
+13. `ClientOrderAccess` - токен доступа устройства клиента.
 
 ---
 
@@ -213,10 +214,70 @@
 
 ---
 
-## 11. Связи с другими сущностями
+## 11. DeliveryAssignment
+
+**Назначение курьера**
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|-------------|----------|
+| id | uuid | да | PK, gen_random_uuid() |
+| order_id | uuid | да | FK → orders.id |
+| courier_id | uuid | да | FK → auth.users.id (роль COURIER) |
+| status | enum delivery_assignment_status | да | ASSIGNED, IN_TRANSIT, ARRIVED, COMPLETED, CANCELLED |
+| assigned_at | timestamptz | да | Момент назначения |
+| picked_up_at | timestamptz | нет | Момент забора заказа курьером |
+| arrived_at | timestamptz | нет | Момент прибытия к клиенту |
+| completed_at | timestamptz | нет | Момент завершения доставки |
+| cancelled_at | timestamptz | нет | Момент отмены назначения |
+| cancel_reason | text | нет | Причина отмены/переназначения |
+| confirmation_token_hash | text | нет | SHA-256 хэш QR-токена для подтверждения доставки |
+| confirmation_token_used | boolean | да | default false, одноразовое гашение |
+| route_group_id | uuid | нет | FK для попутной доставки (если объединены заказы) |
+
+---
+
+## 12. KitchenTicket
+
+**Кухонный чек**
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|-------------|----------|
+| id | uuid | да | PK, gen_random_uuid() |
+| order_id | uuid | да | FK → orders.id |
+| ticket_number | serial | да | Человеко-читаемый номер чека |
+| printed_at | timestamptz | да | Момент печати / передачи на кухню |
+| printed_by | uuid | да | FK → auth.users.id (менеджер, который передал) |
+| status | enum kitchen_ticket_status | да | PRINTED, READY |
+| marked_ready_at | timestamptz | нет | Момент ручной отметки менеджером «Готов» |
+| marked_ready_by | uuid | нет | FK → auth.users.id (менеджер, который отметил) |
+
+Примечание: Кухня работает без экранов (бумажная кухня). Статус COOKING не нужен — менеджер сразу отмечает READY.
+
+---
+
+## 13. ClientOrderAccess
+
+**Токен доступа устройства клиента**
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|-------------|----------|
+| id | uuid | да | PK, gen_random_uuid() |
+| order_id | uuid | да | FK → orders.id |
+| device_token_hash | text | да | SHA-256 хэш токена, хранящегося на устройстве клиента |
+| created_at | timestamptz | да | Момент создания |
+| expires_at | timestamptz | да | Момент истечения доступа |
+| last_accessed_at | timestamptz | нет | Последний визит клиента на страницу заказа |
+
+Примечание: Токен хранится на устройстве клиента (localStorage). В БД хранится только хэш. Персональных данных клиента в этой таблице нет.
+
+---
+
+## 14. Связи с другими сущностями
 
 Заказ должен быть связан с:
 
+* токеном доступа устройства клиента (ClientOrderAccess);
+* назначением курьера (DeliveryAssignment);
 * кухонным чеком;
 * платежной записью;
 * доставкой;
@@ -238,7 +299,7 @@
 
 ---
 
-## 12. Закрытые решения
+## 15. Закрытые решения
 
 1. `orderNumber` должен иметь формат с датой и коротким порядковым номером за день, например `20260721-0042`. Такой формат понятен клиенту и снижает риск раскрытия общего количества заказов за все время.
 2. `OrderDraft` хранится после создания `Order` как связанный технический источник, но не используется как рабочий заказ. Это нужно для аудита подтверждения, корзины и спорных ситуаций.
@@ -248,3 +309,4 @@
 6. Состояние оплаты хранится в `PaymentRecord` отдельно от статуса заказа. `Закрыт` разрешен только при одновременном наличии подтвержденной доставки и оплаты.
 7. `В урегулировании` является состоянием отдельного `ResolutionCase`, а не `OrderDraft`.
 8. Повторная продажа создает отдельный `Order` со ссылкой `sourceReturnedOrderId`; данные исходного и нового клиента не объединяются.
+9. **Решение: В MVP отдельная таблица `CustomerProfile` не создаётся.** Все контактные данные клиента привязаны к конкретному заказу через `CustomerContact`. Нормализация и сопоставление клиентов между заказами выполняется через `normalized_phone_e164` и `normalized_telegram_username` в `CustomerContact`. Отдельный профиль клиента — это backlog для будущих версий.
