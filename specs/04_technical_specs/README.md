@@ -20,7 +20,7 @@ Technical Specs отвечают на вопрос: как реализоват�
 2. `Technical_Admin_Complaints.md` - администрирование, жалобы, журналы и ограничения прав.
 3. `Technical_Client_Page_Chat.md` - клиентская страница заказа, чат, хранение доступа 30 дней и сообщения.
 4. `Technical_Client_Verification.md` - OTP, доверенные каналы Telegram/Email, срок доверия и блокировка попыток.
-5. `Technical_MVP_Implementation_Decisions.md` - технические решения MVP; архитектурный стек зафиксирован под Vercel (Next.js App Router) и Supabase (PostgreSQL, Auth, RLS, Realtime, Storage) в рамках группы 3 readiness-плана.
+5. `Technical_MVP_Implementation_Decisions.md` - технические решения MVP; стек Vercel + Supabase, порядок миграций, матрица тестирования, CI gates и правила отката зафиксированы в рамках группы 6 readiness-плана.
 6. `Technical_Order_CRM_Workflow.md` - технический поток CRM менеджера, кухня, курьер, статусы и события.
 7. `Technical_Order_Data_Model.md` - основные сущности заказа, корзины, позиций, статусов и истории.
 8. `Technical_Payment_Delivery.md` - платежная ссылка, наличная оплата, QR-доставка и закрытие заказа.

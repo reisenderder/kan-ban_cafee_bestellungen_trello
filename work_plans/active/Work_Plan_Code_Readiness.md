@@ -1,8 +1,8 @@
 # Work Plan: Подготовка проекта к написанию кода
 
-> **Статус**: Активный — завершена группа 5, готова группа 6
+> **Статус**: Активный — завершена группа 6, готова группа 7
 > **Дата создания**: 2026-07-25
-> **Версия**: 0.5
+> **Версия**: 0.6
 > **Целевая платформа**: Vercel + Supabase
 > **Источник**: `../../README.md`, `../../specs/RULES.md`, `../../specs/README.md`, `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, `Work_Plan_MVP_Order_Flow.md`
 
@@ -53,8 +53,8 @@
 | 2 | Согласованность продуктовых спецификаций | `docs/product-spec-consistency` | Завершена — PR #32 смержен | Продуктовые конфликты закрыты, статусы `Проверено` зафиксированы |
 | 3 | Архитектура Vercel и Supabase | `docs/vercel-supabase-architecture` | Завершена — PR #33 смержен | Зафиксированы целевой стек Vercel + Supabase и единство миграций |
 | 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Завершена — PR #34 смержен | Определены schemas, RLS default-deny, Auth lifecycle, Service Role и миграции |
-| 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Завершена — зафиксированы атомарность, идемпотентность, single-use QR, OTP adapters и Vercel Cron | Критические операции атомарны и идемпотентны, интеграции имеют безопасные контракты |
-| 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Ожидает | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
+| 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Завершена — PR #35 смержен | Зафиксированы атомарность, идемпотентность, single-use QR, OTP adapters и Vercel Cron |
+| 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Завершена — зафиксированы Node 20 LTS, npm, CI gates, DB-first migration order и rollback procedure | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
 | 7 | Visual Rules и итоговая готовность к коду | `docs/visual-rules-code-readiness` | Ожидает | Visual Rules утверждены, Work Plans синхронизированы, финальный аудит пройден |
 
 ---
@@ -270,6 +270,19 @@
 * следующий кодовый Work Plan требует реализовать и фактически запустить описанные CI gates;
 * правила preview запрещают production secrets и production данные;
 * документированный порядок deployment и rollback однозначен.
+
+Результат реализации группы 6 на 2026-07-26:
+
+* зафиксированы целевые стандарты: **Node.js 20.x LTS**, пакетный менеджер **npm (v10+)**, обязательный `package-lock.json` и окончание строк `LF`;
+* определена тестовая матрица команд `npm`: `lint`, `typecheck`, `test:unit`, `test:rls` (Supabase СУБД/RLS тесты), `test:e2e` (Playwright), `build`;
+* зафиксирован контракт CI Gates (`.github/workflows/ci.yml`): автоматический последовательный запуск всех 5 проверок с блокировкой слияния PR при ошибке;
+* установлена строгость публикации: **миграции Supabase выполняются ДО деплоя Vercel**; при ошибке миграции деплой приложения автоматически отменяется;
+* описана регламентная процедура Rollback (откат версии приложения через `vercel rollback` и аддитивный откат СУБД);
+* спецификации `Technical_MVP_Implementation_Decisions.md` и `specs/04_technical_specs/README.md` актуализированы.
+
+Группа 6 официально завершена.
+
+Следующий шаг: перейти к Группе 7 («Visual Rules и итоговая готовность к коду») в отдельной ветке `docs/visual-rules-code-readiness`.
 
 ---
 

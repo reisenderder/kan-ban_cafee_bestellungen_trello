@@ -1,19 +1,72 @@
-# Technical Spec: Решения перед реализацией MVP
+# Technical Spec: Решения перед реализацией MVP (Deployment, CI & Тестирование)
 
-> **Статус**: Проверено и зафиксировано (Группа 3: Vercel + Supabase)
+> **Статус**: Проверено и зафиксировано (Группа 6: Deployment, тестирование и CI)
 > **Дата создания**: 2026-07-22
-> **Дата обновления**: 2026-07-25
-> **Версия**: 1.1
-> **Источник**: `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`
+> **Дата обновления**: 2026-07-26
+> **Версия**: 1.2
+> **Источник**: `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`, `Technical_Risk_Resolution.md`
 > **Связанный Work Plan**: `../../work_plans/active/Work_Plan_MVP_Order_Flow.md` — ссылка для трассировки блокеров; Work Plan не является источником технических решений.
 
 ---
 
 ## 1. Назначение
 
-Документ собирает технические и архитектурные решения для первого MVP-потока заказа. Архитектурный стек зафиксирован под целевую платформу **Vercel** и backend на **Supabase** в рамках Группы 3 плана `../../work_plans/active/Work_Plan_Code_Readiness.md`.
+Документ собирает технические и архитектурные решения для первого MVP-потока заказа. Правила сборки,CI-проверок (GitHub Actions), тестовой матрицы, версионирования, порядка накатки миграций и процедуры отката (rollback) зафиксированы в рамках Группы 6 плана `../../work_plans/active/Work_Plan_Code_Readiness.md`.
 
-Решения ниже не добавляют новые бизнес-функции. Они выбирают минимальный технический способ реализовать уже утвержденные спецификации: витрину, корзину, оформление заказа, CRM менеджера, кухню, курьера, доставку, оплату, клиентскую страницу, чат, урегулирование, скидочную продажу и жалобы.
+---
+
+## 1.1 Стандарты окружения и зависимостей (Prerequisites)
+
+1. **Целевая версия Node.js**: `Node.js 20.x LTS`.
+2. **Менеджер пакетов**: `npm` (версии 10+). Файл `package-lock.json` является единственным источником точных версий зависимостей и обязательно коммитится в репозиторий. Использование `yarn` или `pnpm` запрещено для сохранения единого стандарта.
+3. **Политика окончаний строк**: Строго `LF` для всех файлов репозитория (`.gitattributes` содержит `* text=auto eol=lf`).
+
+---
+
+## 1.2 Матрица тестирования и запланированные команды `npm`
+
+Перед началом разработки зафиксирован следующий контракт команд `package.json`:
+
+* `npm run lint` — статический анализ кода (ESLint + Prettier);
+* `npm run typecheck` — полная проверка типов TypeScript без генерации кода (`tsc --noEmit`);
+* `npm run test:unit` — модульные тесты доменных функций и бизнес-валидаций (Vitest / Jest);
+* `npm run test:rls` — автоматическая проверка RLS-политик Supabase СУБД (Supabase CLI + `pgTAP` / RLS test runner);
+* `npm run test:e2e` — end-to-end проверка сквозного потока заказа (Playwright);
+* `npm run build` — финальная сборка Next.js приложения.
+
+---
+
+## 1.3 Контракт CI Gates (GitHub Actions Workflow)
+
+Будущий workflow `.github/workflows/ci.yml` запускается при каждом Pull Request в ветку `main` и выполняет последовательный набор gates:
+
+1. **Gate 1 (Linting)**: `npm run lint`
+2. **Gate 2 (Typecheck)**: `npm run typecheck`
+3. **Gate 3 (Unit Tests)**: `npm run test:unit`
+4. **Gate 4 (DB & RLS Tests)**: `npm run test:rls` (проверка `default deny` и ролевых прав на тестовом инстансе Supabase)
+5. **Gate 5 (Build Check)**: `npm run build`
+
+Слияние PR в `main` заблокировано, если хотя бы один CI gate завершился с ошибкой.
+
+---
+
+## 1.4 Порядок Deployment и миграций
+
+Правило: **Миграции СУБД выполняются СТРОГО ДО публикации Vercel Deployment**.
+
+Последовательность публикации:
+1. CI проводит проверку дрейфа и валидацию миграций (`supabase db lint`);
+2. Выполняется накатка миграций на Supabase Production (`supabase db push`);
+3. Выполняется сборка и публикация приложения на Vercel (`vercel build --prod`).
+
+Если миграция СУБД завершается ошибкой, публикация приложения на Vercel автоматически отменяется.
+
+---
+
+## 1.5 Процедура Rollback (Откат)
+
+1. **Откат приложения**: В случае критического сбоя в Production выполняется мгновенный откат Vercel на предыдущий успешный deployment hash через Vercel Dashboard / CLI (`vercel rollback`).
+2. **Откат СУБД**: Все миграции должны проектироваться по принципу аддитивности (backward-compatible schema changes). Если требуется откат схемы, применяется обратная SQL-миграция через Supabase CLI.
 
 ---
 
