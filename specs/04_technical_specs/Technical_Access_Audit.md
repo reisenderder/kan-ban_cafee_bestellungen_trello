@@ -3,7 +3,7 @@
 > **Статус**: Проверено и зафиксировано (Группа 4: Данные, Auth и безопасность Supabase)
 > **Дата создания**: 2026-07-21
 > **Дата обновления**: 2026-07-26
-> **Версия**: 1.1
+> **Версия**: 1.2
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Order_CRM.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Complaints.md`, `../03_feature_specs/Feature_Client_Chat.md`, `../03_feature_specs/Feature_Route_Batching.md`, `Technical_MVP_Implementation_Decisions.md`
 
 ---
@@ -28,6 +28,10 @@
 `Клиент` и `Система` являются типами actor/principal для правил доступа и аудита, но **не имеют учетных записей Supabase Auth**.
 
 `Owner` — бизнес-персона владельца кафе, использующая роль `Администратор`. Отдельная техническая роль `Owner` в MVP не создается.
+
+### Кухня как актор в MVP
+
+> **Решение для MVP:** Кухня работает по концепции «бумажная кухня» и не имеет собственной учётной записи в системе. Все действия, связанные с кухней (передача заказа, отметка готовности), выполняются менеджером под ролью `MANAGER`. Если в будущем появится экран на кухне — будет добавлена отдельная роль `KITCHEN` с минимальными правами (только просмотр назначенных чеков и отметка готовности).
 
 ### Аутентификация и сессии сотрудников:
 
@@ -372,7 +376,55 @@ Technical Spec готов к переходу в User Stories и Work Plans, е�
 
 ---
 
-## 17. Закрытые решения
+## 17. Примеры RLS-политик (SQL)
+
+```sql
+-- Принцип: default deny — все таблицы начинаются с ALTER TABLE ... ENABLE ROW LEVEL SECURITY;
+
+-- Менеджер: доступ ко всем заказам
+CREATE POLICY manager_orders_select ON orders
+  FOR SELECT TO authenticated
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'MANAGER'
+  );
+
+-- Курьер: доступ только к назначенным доставкам
+CREATE POLICY courier_delivery_select ON delivery_assignments
+  FOR SELECT TO authenticated
+  USING (
+    courier_id = auth.uid()
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'COURIER'
+  );
+
+-- Администратор: полный доступ к таблице сотрудников
+CREATE POLICY admin_users_all ON user_profiles
+  FOR ALL TO authenticated
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+
+-- Офицер урегулирования: доступ к resolution_cases
+CREATE POLICY resolution_officer_cases ON resolution_cases
+  FOR SELECT TO authenticated
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'RESOLUTION_OFFICER'
+  );
+
+-- AuditLog: append-only, INSERT для всех авторизованных, SELECT только для ADMIN
+CREATE POLICY audit_log_insert ON audit_logs
+  FOR INSERT TO authenticated
+  WITH CHECK (true);
+
+CREATE POLICY audit_log_select ON audit_logs
+  FOR SELECT TO authenticated
+  USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'ADMIN'
+  );
+```
+
+---
+
+## 18. Закрытые решения
 
 1. Полный номер телефона показывается через ручное действие `Показать полный номер`, если полный номер не нужен роли автоматически. В карточке активной доставки курьера полный номер может быть показан сразу, потому что звонок является прямой задачей доставки.
 2. Экспорт клиентских данных на первом этапе запрещен для всех ролей, включая администратора. Если позже экспорт понадобится, он должен быть отдельной функцией с ограничением прав, причиной экспорта и журналом.

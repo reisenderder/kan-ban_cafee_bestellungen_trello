@@ -1,9 +1,9 @@
 # Technical Spec: Риски, урегулирование и списки
 
-> **Статус**: Проверено
+> **Статус**: Проверено и зафиксировано
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-07-25
-> **Версия**: 1.0
+> **Дата обновления**: 2026-07-26
+> **Версия**: 1.1
 > **Источник**: `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Contact_Confirmation.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `Technical_Access_Audit.md`
 
 ---
@@ -107,6 +107,24 @@
 Будущие заказы из красного списка принимаются только после полной онлайн-оплаты.
 
 Операционный `ResolutionCase` может быть закрыт и архивирован отдельно. Активная красная risk-запись, предупреждение и требование полной онлайн-оплаты не имеют автоматического срока снятия и действуют до явного решения отдела урегулирования.
+
+### Схема таблицы risk_records
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|-------------|----------|
+| id | uuid | да | PK, gen_random_uuid() |
+| entity_type | enum risk_entity_type | да | PHONE, TELEGRAM, EMAIL, ADDRESS, GEOLOCATION |
+| entity_value_hash | text | да | SHA-256 хэш нормализованного значения (телефон, Telegram username и т.д.) |
+| risk_level | enum risk_level | да | YELLOW, RED |
+| incident_count | integer | да | default 1, количество инцидентов |
+| first_incident_at | timestamptz | да | Дата первого инцидента |
+| last_incident_at | timestamptz | да | Дата последнего инцидента |
+| expires_at | timestamptz | нет | Дата автоматического снятия (для YELLOW — 60 дней от last_incident_at; для RED — null, снимается только вручную) |
+| resolution_case_id | uuid | нет | FK → resolution_cases.id (кейс, породивший запись) |
+| removed_at | timestamptz | нет | Дата досрочного снятия |
+| removed_by | uuid | нет | FK → auth.users.id (офицер урегулирования) |
+| remove_reason | text | нет | Причина досрочного снятия |
+| created_at | timestamptz | да | Момент создания записи |
 
 ---
 

@@ -3,7 +3,7 @@
 > **Статус**: Проверено и зафиксировано (Группа 6: Deployment, тестирование и CI)
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-26
-> **Версия**: 1.2
+> **Версия**: 1.3
 > **Источник**: `Technical_Order_Data_Model.md`, `Technical_Client_Verification.md`, `Technical_Access_Audit.md`, `Technical_Order_CRM_Workflow.md`, `Technical_Client_Page_Chat.md`, `Technical_Payment_Delivery.md`, `Technical_Risk_Resolution.md`
 > **Связанный Work Plan**: `../../work_plans/active/Work_Plan_MVP_Order_Flow.md` — ссылка для трассировки блокеров; Work Plan не является источником технических решений.
 
@@ -147,6 +147,12 @@
    * **Telegram Bot API**: отправка OTP клиенту;
    * **SMTP / Email Provider**: отправка OTP клиенту;
    * **Vercel Cron**: фоновые регламентные задачи (очистка устаревших токенов, регламентная архивация).
+     
+     **Расписание Vercel Cron Jobs:**
+     | Задача | Расписание (UTC) | Описание |
+     |--------|------------------|----------|
+     | cleanup-expired-tokens | `0 * * * *` (каждый час) | Удаление просроченных OTP-кодов и токенов верификации |
+     | archive-chats | `0 1 * * *` (ежедневно в 01:00 UTC / 03:00 Каир) | Архивация чатов, закрытых более 30 дней назад |
 
 ---
 
@@ -164,6 +170,8 @@ OTP реализуется через два канала:
 
 1. Telegram Bot API для Telegram;
 2. SMTP или транзакционный Email-провайдер для Email.
+
+> **Решение:** Для отправки Email в MVP используется **Resend** (resend.com). Причины: нативная интеграция с Vercel/Next.js, простой REST API, бесплатный тариф покрывает объём MVP. Конфигурация: API-ключ в переменных окружения Vercel (`RESEND_API_KEY`). При недоступности Resend — письмо не отправляется, попытка повторяется по retry-логике Production-адаптера (1s/2s/4s, timeout 5s).
 
 Минимальная логика:
 

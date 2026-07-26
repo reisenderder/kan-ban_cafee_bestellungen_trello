@@ -1,8 +1,8 @@
 # Work Plan: MVP-поток заказа
 
-> **Статус**: Активный — заблокирован до завершения `Work_Plan_Code_Readiness.md`
+> **Статус**: Активный — **разблокирован, готов к реализации кодом**
 > **Дата создания**: 2026-07-22
-> **Дата обновления**: 2026-07-25
+> **Дата обновления**: 2026-07-26
 > **Версия**: 0.2
 > **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/05_visual_rules_skills/UI_UX_Design_System.md`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow.md`
 > **Технические решения перед кодом**: `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`
@@ -395,7 +395,7 @@
 7. правила журналирования;
 8. способ ручной платежной ссылки.
 
-Предварительные решения собраны в `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, но их архитектурная актуализация и проверка еще выполняются в `Work_Plan_Code_Readiness.md`. Блокеры считаются закрытыми только после завершения всех семи групп этого readiness-плана.
+Предварительные решения собраны в `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`. Все блокеры закрыты в рамках завершённого `Work_Plan_Code_Readiness.md`, все 7 групп прошли проверку, и код разрешён к написанию.
 
 ---
 
@@ -410,7 +410,7 @@
 * Work Plan не используется для добавления неописанных функций.
 * завершены все семь групп `Work_Plan_Code_Readiness.md` и получено явное подтверждение пользователя о готовности к коду.
 
-На текущем этапе эти условия не выполнены, поэтому начало реализации заблокировано.
+Все блокеры закрыты в рамках завершённого `Work_Plan_Code_Readiness.md`, все 7 групп прошли проверку, и код разрешён к написанию.
 
 ---
 

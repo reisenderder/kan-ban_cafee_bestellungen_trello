@@ -1,9 +1,9 @@
 # Technical Spec: Администрирование и жалобы
 
-> **Статус**: Проверено
+> **Статус**: Проверено и зафиксировано
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-07-25
-> **Версия**: 1.0
+> **Дата обновления**: 2026-07-26
+> **Версия**: 1.1
 > **Источник**: `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Complaints.md`, `Technical_Access_Audit.md`
 
 ---
@@ -67,6 +67,24 @@ Hard delete сотрудника и восстановление из `Архи�
 Жалобы хранятся 1 год.
 
 Hard delete через продуктовый интерфейс отсутствует. Действие `Удалить` требует уже зафиксированный результат, причину и администратора-исполнителя; оно устанавливает признак скрытого технического архива, сохраняя карточку, связи и append-only журнал не менее одного года после закрытия.
+
+### Схема таблицы complaints
+
+| Поле | Тип | Обязательное | Описание |
+|------|-----|-------------|----------|
+| id | uuid | да | PK, gen_random_uuid() |
+| complaint_number | serial | да | Человеко-читаемый номер жалобы |
+| order_id | uuid | нет | FK → orders.id (жалоба может быть не привязана к заказу) |
+| customer_contact_id | uuid | нет | FK → customer_contacts.id |
+| contact_channel | enum complaint_channel | да | WEBSITE_FORM, TELEGRAM, EMAIL, PHONE |
+| category | enum complaint_category | да | DELIVERY, FOOD_QUALITY, SERVICE, PAYMENT, OTHER |
+| complaint_text | text | да | Текст жалобы клиента |
+| status | enum complaint_status | да | NEW, IN_REVIEW, RESOLVED, REJECTED |
+| assigned_admin_id | uuid | нет | FK → auth.users.id (администратор, обрабатывающий жалобу) |
+| resolution_notes | text | нет | Заметки по результату рассмотрения |
+| created_at | timestamptz | да | Момент подачи жалобы |
+| resolved_at | timestamptz | нет | Момент закрытия жалобы |
+| deleted_at | timestamptz | нет | Soft delete (не физическое удаление) |
 
 ---
 
