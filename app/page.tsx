@@ -1,56 +1,68 @@
+'use client';
+
+import React, { useState } from 'react';
+import { useCart } from '../context/CartContext';
+
 export default function HomePage() {
-  const sampleCategories = ['Категория 1', 'Категория 2', 'Категория 3', 'Категория 4'];
+  const { addItem } = useCart();
+  const [selectedCategory, setSelectedCategory] = useState<string>('Все');
+
+  const sampleCategories = ['Все', 'Категория 1', 'Категория 2', 'Категория 3', 'Категория 4'];
 
   const placeholderDishes = [
     {
-      id: '1',
+      id: 'dish-1',
       title: 'Блюдо 1',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 150,
       category: 'Категория 1',
       badge: 'Пробный слот 1',
     },
     {
-      id: '2',
+      id: 'dish-2',
       title: 'Блюдо 2',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 200,
       category: 'Категория 1',
       badge: 'Пробный слот 2',
     },
     {
-      id: '3',
+      id: 'dish-3',
       title: 'Блюдо 3',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 180,
       category: 'Категория 2',
       badge: null,
     },
     {
-      id: '4',
+      id: 'dish-4',
       title: 'Блюдо 4',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 250,
       category: 'Категория 2',
       badge: null,
     },
     {
-      id: '5',
+      id: 'dish-5',
       title: 'Блюдо 5',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 120,
       category: 'Категория 3',
       badge: null,
     },
     {
-      id: '6',
+      id: 'dish-6',
       title: 'Блюдо 6',
       description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
-      price: '00.00 EGP',
+      price: 300,
       category: 'Категория 4',
       badge: null,
     },
   ];
+
+  const filteredDishes = selectedCategory === 'Все'
+    ? placeholderDishes
+    : placeholderDishes.filter((d) => d.category === selectedCategory);
 
   return (
     <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
@@ -71,7 +83,7 @@ export default function HomePage() {
             DAYMOHKCOFEE
           </h1>
           <p style={{ color: 'rgba(249, 245, 236, 0.85)', fontSize: '1.1rem', marginBottom: '28px' }}>
-            Каркас публичной витрины онлайн-заказа. Витринные места подготовлены для заполнения блюдами и категориями.
+            Интерактивный каркас витрины и корзины заказа. Выберите витринный слот блюда для проверки работы корзины и адреса доставки.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <a href="#menu" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
@@ -86,29 +98,34 @@ export default function HomePage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
             <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Публичная витрина</h2>
-            <p style={{ color: 'var(--color-text-secondary)' }}>Каркас витринных мест по категориям</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>Фильтрация по категориям и витринным местам</p>
           </div>
         </div>
 
+        {/* Dynamic Category Filter */}
         <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '32px' }}>
-          {sampleCategories.map((cat, i) => (
-            <button
-              key={i}
-              style={{
-                padding: '10px 20px',
-                borderRadius: 'var(--radius-full)',
-                border: i === 0 ? 'none' : '1px solid var(--color-border)',
-                backgroundColor: i === 0 ? 'var(--color-deep-forest)' : 'var(--color-surface)',
-                color: i === 0 ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
-                fontWeight: 600,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'var(--transition-fast)'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
+          {sampleCategories.map((cat) => {
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: 'var(--radius-full)',
+                  border: isSelected ? 'none' : '1px solid var(--color-border)',
+                  backgroundColor: isSelected ? 'var(--color-deep-forest)' : 'var(--color-surface)',
+                  color: isSelected ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'var(--transition-fast)'
+                }}
+              >
+                {cat}
+              </button>
+            );
+          })}
         </div>
 
         {/* Dishes Grid */}
@@ -117,7 +134,7 @@ export default function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
           gap: '24px'
         }}>
-          {placeholderDishes.map((dish) => (
+          {filteredDishes.map((dish) => (
             <div key={dish.id} className="card-menu">
               <div>
                 {dish.badge && (
@@ -132,9 +149,20 @@ export default function HomePage() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
                 <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-deep-forest)' }}>
-                  {dish.price}
+                  {dish.price} EGP
                 </span>
-                <button className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                <button
+                  className="btn-primary"
+                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  onClick={() =>
+                    addItem({
+                      id: dish.id,
+                      title: dish.title,
+                      price: dish.price,
+                      category: dish.category,
+                    })
+                  }
+                >
                   + В корзину
                 </button>
               </div>
