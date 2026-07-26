@@ -1,8 +1,9 @@
 # Work Plan: Подготовка проекта к написанию кода
 
-> **Статус**: Активный — завершена группа 6, готова группа 7
+> **Статус**: Активный — завершены все 7 групп, готов к финальной проверке пользователя и переходу в completed/
 > **Дата создания**: 2026-07-25
-> **Версия**: 0.6
+> **Дата обновления**: 2026-07-26
+> **Версия**: 1.0
 > **Целевая платформа**: Vercel + Supabase
 > **Источник**: `../../README.md`, `../../specs/RULES.md`, `../../specs/README.md`, `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`, `Work_Plan_MVP_Order_Flow.md`
 
@@ -55,7 +56,7 @@
 | 4 | Данные, Auth и безопасность Supabase | `docs/supabase-data-auth-security` | Завершена — PR #34 смержен | Определены schemas, RLS default-deny, Auth lifecycle, Service Role и миграции |
 | 5 | Надежность домена и интеграций | `docs/domain-reliability-integrations` | Завершена — PR #35 смержен | Зафиксированы атомарность, идемпотентность, single-use QR, OTP adapters и Vercel Cron |
 | 6 | Deployment, тестирование и CI | `docs/deployment-testing-ci` | Завершена — зафиксированы Node 20 LTS, npm, CI gates, DB-first migration order и rollback procedure | Окружения, проверки, CI gates и порядок публикации воспроизводимы |
-| 7 | Visual Rules и итоговая готовность к коду | `docs/visual-rules-code-readiness` | В процессе | Visual Rules утверждены, Work Plans синхронизированы, идет финализация |
+| 7 | Visual Rules и итоговая готовность к коду | `docs/visual-rules-code-readiness` | Завершена — зафиксирована спецификация UI/UX (v1.1), токены, PII-маскирование, состояния и доступность | Все 7 групп плана завершены, спецификации и дизайн-система согласованы |
 
 ---
 
@@ -314,7 +315,8 @@
 
 * создан раздел `specs/05_visual_rules_skills/` и проиндексирован в `specs/README.md`;
 * утверждены UI/UX ориентиры: Sunsama (Канбан доска), DoorDash (Веб-витрина заказа), Yelp/Limón (Визуальный стиль);
-* зафиксирована спецификация `UI_UX_Design_System.md` с токенами цвета (`--color-deep-forest`, `--color-vanilla-cream`, `--color-marigold-zest`), типографикой, версткой и правилами UI-компонентов.
+* зафиксирована спецификация `UI_UX_Design_System.md` (v1.1) с токенами цвета (`--color-deep-forest`, `--color-vanilla-cream`, `--color-marigold-zest`), типографикой, версткой, правилами UI-компонентов, состояниями (loading/empty/error/success/disabled), PII-маскированием, печатью кухонных чеков, QR/fallback и accessibility;
+* синхронизирован `Work_Plan_MVP_Order_Flow.md` с токенами дизайн-системы, Vercel, Supabase и CI gates.
 
 ---
 

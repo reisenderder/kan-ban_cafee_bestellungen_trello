@@ -4,8 +4,9 @@
 > **Дата создания**: 2026-07-22
 > **Дата обновления**: 2026-07-25
 > **Версия**: 0.2
-> **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow.md`, `../../specs/06_user_stories/User_Stories_Menu_Availability.md`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow_Check_Report.md`, `../../specs/06_user_stories/User_Stories_All_Check_Report.md`
+> **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/05_visual_rules_skills/UI_UX_Design_System.md`, `../../specs/06_user_stories/User_Stories_MVP_Order_Flow.md`
 > **Технические решения перед кодом**: `../../specs/04_technical_specs/Technical_MVP_Implementation_Decisions.md`
+> **Дизайн-система и UI/UX**: `../../specs/05_visual_rules_skills/UI_UX_Design_System.md`
 > **Readiness gate**: `Work_Plan_Code_Readiness.md`
 
 ---
