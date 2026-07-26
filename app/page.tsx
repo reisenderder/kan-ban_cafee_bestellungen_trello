@@ -1,38 +1,54 @@
 export default function HomePage() {
-  const sampleCategories = ['Традиционные блюда', 'Выпечка', 'Мясные блюда', 'Напитки'];
+  const sampleCategories = ['Категория 1', 'Категория 2', 'Категория 3', 'Категория 4'];
 
-  const sampleDishes = [
+  const placeholderDishes = [
     {
       id: '1',
-      title: 'Жижиг-галнаш',
-      description: 'Традиционное чеченское блюдо: отварное мясо с галушками из кукурузной или пшеничной муки и чесночным соусом.',
-      price: '350 EGP',
-      category: 'Традиционные блюда',
-      badge: 'Популярное',
+      title: 'Блюдо 1',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 1',
+      badge: 'Пробный слот 1',
     },
     {
       id: '2',
-      title: 'Хингалш',
-      description: 'Тонкие лепёшки с начинкой из сочной варёной тыквы, смазанные топлёным маслом.',
-      price: '180 EGP',
-      category: 'Выпечка',
-      badge: 'Фирменное',
+      title: 'Блюдо 2',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 1',
+      badge: 'Пробный слот 2',
     },
     {
       id: '3',
-      title: 'Чепалгаш',
-      description: 'Традиционные чеченские лепёшки с нежным творогом и зелёным луком.',
-      price: '190 EGP',
-      category: 'Выпечка',
+      title: 'Блюдо 3',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 2',
       badge: null,
     },
     {
       id: '4',
-      title: 'Шашлык из баранины',
-      description: 'Сочная баранина, маринованная по горскому рецепту и обжаренная на углях.',
-      price: '420 EGP',
-      category: 'Мясные блюда',
-      badge: 'Хит',
+      title: 'Блюдо 4',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 2',
+      badge: null,
+    },
+    {
+      id: '5',
+      title: 'Блюдо 5',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 3',
+      badge: null,
+    },
+    {
+      id: '6',
+      title: 'Блюдо 6',
+      description: 'Пробное витринное место для блюда кафе DAYMOHKCOFEE. Название, описание и цена будут добавлены позже.',
+      price: '00.00 EGP',
+      category: 'Категория 4',
+      badge: null,
     },
   ];
 
@@ -52,14 +68,14 @@ export default function HomePage() {
         <div style={{ maxWidth: '600px', position: 'relative', zIndex: 2 }}>
           <span className="badge badge-marigold" style={{ marginBottom: '16px' }}>Кавказское кафе в Каире</span>
           <h1 style={{ color: 'var(--color-vanilla-cream)', fontSize: '3rem', lineHeight: '1.15', marginBottom: '16px' }}>
-            Подлинный вкус кавказской кухни
+            DAYMOHKCOFEE
           </h1>
           <p style={{ color: 'rgba(249, 245, 236, 0.85)', fontSize: '1.1rem', marginBottom: '28px' }}>
-            Готовим с любовью и доставкой по всему Каиру. Выберите блюда, а мы позаботимся о качественной и быстрой доставке.
+            Каркас публичной витрины онлайн-заказа. Витринные места подготовлены для заполнения блюдами и категориями.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <a href="#menu" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-              Смотреть меню
+              Перейти к витрине
             </a>
           </div>
         </div>
@@ -69,8 +85,8 @@ export default function HomePage() {
       <section id="menu" style={{ marginBottom: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
           <div>
-            <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Наше меню</h2>
-            <p style={{ color: 'var(--color-text-secondary)' }}>Выберите категорию блюд</p>
+            <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Публичная витрина</h2>
+            <p style={{ color: 'var(--color-text-secondary)' }}>Каркас витринных мест по категориям</p>
           </div>
         </div>
 
@@ -101,7 +117,7 @@ export default function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
           gap: '24px'
         }}>
-          {sampleDishes.map((dish) => (
+          {placeholderDishes.map((dish) => (
             <div key={dish.id} className="card-menu">
               <div>
                 {dish.badge && (
