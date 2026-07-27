@@ -6,6 +6,13 @@
 
 ## Хронология
 
+### 2026-07-26 — Backend-инфраструктура и логика OTP/СУБД (Work_Plan_MVP_Order_Flow)
+* **Результат**: Реализована backend-инфраструктура верификации, адаптеров отправки и СУБД Supabase.
+* **Ключевые элементы**:
+  - Миграции Supabase SQL: `00001_enum_types.sql` ... `00005_indexes_and_triggers.sql` накаткой в СУБД.
+  - Верификация OTP: SHA-256 хэширование токенов в `crypto.ts`, `DevelopmentOtpAdapter` и `ProductionOtpAdapter` (Resend SMTP / Telegram Bot API с 3 повторными попытками и 5с таймаутом).
+  - Безопасность Supabase Auth: Клиентские утилиты `@supabase/ssr` (`lib/supabase/client.ts`, `lib/supabase/server.ts`).
+
 ### 2026-07-26 — Базовая архитектура, Auth, Безопасность и CI/CD (Группы 1-6 Work_Plan_Code_Readiness)
 * **Результат**: Зафиксированы архитектурные решения и инфраструктура MVP (`specs/04_technical_specs/ Technical_MVP_Implementation_Decisions.md`).
 * **Ключевые элементы**:
