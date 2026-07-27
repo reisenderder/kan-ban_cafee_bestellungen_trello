@@ -46,6 +46,7 @@ export function CartDrawer() {
   return (
     <>
       <div
+        onClick={() => setIsCartOpen(false)}
         style={{
           position: 'fixed',
           inset: 0,
@@ -54,9 +55,11 @@ export function CartDrawer() {
           zIndex: 200,
           display: 'flex',
           justifyContent: 'flex-end',
+          cursor: 'pointer',
         }}
       >
         <div
+          onClick={(e) => e.stopPropagation()}
           className="animate-fade-in"
           style={{
             width: '100%',
@@ -67,6 +70,7 @@ export function CartDrawer() {
             flexDirection: 'column',
             boxShadow: 'var(--shadow-lg)',
             overflowY: 'auto',
+            cursor: 'default',
           }}
         >
           {/* Drawer Header */}

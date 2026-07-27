@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 
 export default function HomePage() {
-  const { addItem } = useCart();
+  const { items, addItem, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('Все');
 
   const sampleCategories = ['Все', 'Категория 1', 'Категория 2', 'Категория 3', 'Категория 4'];
@@ -134,40 +134,111 @@ export default function HomePage() {
           gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
           gap: '24px'
         }}>
-          {filteredDishes.map((dish) => (
-            <div key={dish.id} className="card-menu">
-              <div>
-                {dish.badge && (
-                  <span className="badge badge-marigold" style={{ marginBottom: '12px' }}>
-                    {dish.badge}
+          {filteredDishes.map((dish) => {
+            const cartItem = items.find((i) => i.id === dish.id);
+            const quantityInCart = cartItem ? cartItem.quantity : 0;
+
+            return (
+              <div key={dish.id} className="card-menu">
+                <div>
+                  {dish.badge && (
+                    <span className="badge badge-marigold" style={{ marginBottom: '12px' }}>
+                      {dish.badge}
+                    </span>
+                  )}
+                  <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{dish.title}</h3>
+                  <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '16px', minHeight: '60px' }}>
+                    {dish.description}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
+                  <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-deep-forest)' }}>
+                    {dish.price} EGP
                   </span>
-                )}
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{dish.title}</h3>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem', marginBottom: '16px', minHeight: '60px' }}>
-                  {dish.description}
-                </p>
+
+                  {quantityInCart > 0 ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        backgroundColor: 'var(--color-deep-forest)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '4px 6px',
+                        gap: '8px',
+                      }}
+                    >
+                      <button
+                        onClick={() => updateQuantity(dish.id, -1)}
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: 'none',
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#FFF',
+                          fontWeight: 'bold',
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Уменьшить количество"
+                      >
+                        -
+                      </button>
+                      <span
+                        style={{
+                          color: '#FFF',
+                          fontWeight: 700,
+                          fontSize: '0.95rem',
+                          minWidth: '20px',
+                          textAlign: 'center',
+                        }}
+                      >
+                        {quantityInCart}
+                      </span>
+                      <button
+                        onClick={() => updateQuantity(dish.id, 1)}
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: 'none',
+                          backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                          color: '#FFF',
+                          fontWeight: 'bold',
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                        title="Увеличить количество"
+                      >
+                        +
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      className="btn-primary"
+                      style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                      onClick={() =>
+                        addItem({
+                          id: dish.id,
+                          title: dish.title,
+                          price: dish.price,
+                          category: dish.category,
+                        })
+                      }
+                    >
+                      В корзину
+                    </button>
+                  )}
+                </div>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border)' }}>
-                <span style={{ fontFamily: 'Outfit', fontWeight: 700, fontSize: '1.25rem', color: 'var(--color-deep-forest)' }}>
-                  {dish.price} EGP
-                </span>
-                <button
-                  className="btn-primary"
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
-                  onClick={() =>
-                    addItem({
-                      id: dish.id,
-                      title: dish.title,
-                      price: dish.price,
-                      category: dish.category,
-                    })
-                  }
-                >
-                  + В корзину
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>
