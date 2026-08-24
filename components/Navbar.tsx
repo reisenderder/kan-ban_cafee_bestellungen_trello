@@ -89,6 +89,18 @@ export function Navbar() {
               Витрина
             </a>
 
+            <a
+              href="/login"
+              style={{
+                color: 'var(--color-text-secondary)',
+                textDecoration: 'none',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+              }}
+            >
+              🔑 Служебный вход
+            </a>
+
             <button
               onClick={() => setIsCartOpen(true)}
               className="btn-primary"
