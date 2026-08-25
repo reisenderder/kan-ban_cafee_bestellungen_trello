@@ -2,27 +2,39 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
-import { fetchAvailableDishes, Dish, defaultDishes } from '../lib/menu/dishes';
+import { fetchAvailableDishes, Dish, defaultDishes, fetchCategories, subscribeToMenuUpdates } from '../lib/menu/dishes';
 
 export default function HomePage() {
   const { items, addItem, updateQuantity } = useCart();
   const [selectedCategory, setSelectedCategory] = useState<string>('Все');
   const [dishes, setDishes] = useState<Dish[]>(defaultDishes.filter((d) => d.isAvailable));
+  const [categories, setCategories] = useState<string[]>(['Все', ...fetchCategories()]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedDishForModal, setSelectedDishForModal] = useState<Dish | null>(null);
 
-  // Fetch Available Dishes from Supabase DB on mount
-  useEffect(() => {
-    async function loadDishes() {
-      setIsLoading(true);
-      const data = await fetchAvailableDishes();
-      setDishes(data);
-      setIsLoading(false);
-    }
-    loadDishes();
-  }, []);
+  const reloadMenuData = async () => {
+    setIsLoading(true);
+    const data = await fetchAvailableDishes();
+    setDishes(data);
+    const cats = fetchCategories();
+    // Build unique categories dynamically from current dishes and store
+    const dishCategories = Array.from(new Set(data.map((d) => d.category)));
+    const allUniqueCats = Array.from(new Set([...cats, ...dishCategories]));
+    setCategories(['Все', ...allUniqueCats]);
+    setIsLoading(false);
+  };
 
-  const sampleCategories = ['Все', 'Горячие блюда', 'Напитки', 'Супы', 'Салаты', 'Выпечка'];
+  // Fetch Available Dishes from Supabase DB & subscribe to Realtime Updates
+  useEffect(() => {
+    reloadMenuData();
+
+    // Zero-page-refresh live update listener
+    const unsubscribe = subscribeToMenuUpdates(() => {
+      reloadMenuData();
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const filteredDishes = selectedCategory === 'Все'
     ? dishes
@@ -47,11 +59,11 @@ export default function HomePage() {
             DAYMOHKCOFEE
           </h1>
           <p style={{ color: 'rgba(249, 245, 236, 0.85)', fontSize: '1.1rem', marginBottom: '28px' }}>
-            Традиционные блюда со свежими ингредиентами и доставкой по Каиру. Нажмите на блюдо для подробного ознакомления с составом.
+            Традиционные блюда со свежими ингредиентами и быстрой доставкой по Каиру. Все новинки обновляются в режиме онлайн.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <a href="#menu" className="btn-primary" style={{ padding: '14px 32px', fontSize: '1rem' }}>
-              Перейти к меню
+              Перейти к меню ({dishes.length} блюд)
             </a>
           </div>
         </div>
@@ -63,14 +75,14 @@ export default function HomePage() {
           <div>
             <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Публичное Меню</h2>
             <p style={{ color: 'var(--color-text-secondary)' }}>
-              Кликните на любое блюдо для просмотра подробного состава ингредиентов
+              Кликните на любое блюдо для просмотра подробного состава ингредиентов | Живое обновление онлайн
             </p>
           </div>
         </div>
 
         {/* Dynamic Category Filter */}
         <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '32px' }}>
-          {sampleCategories.map((cat) => {
+          {categories.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (
               <button
@@ -97,7 +109,7 @@ export default function HomePage() {
         {/* Loading Indicator or Dishes Grid */}
         {isLoading ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)' }}>
-            ⏳ Загрузка витрины из базы данных Supabase...
+            ⏳ Синхронизация меню с базой данных Supabase...
           </div>
         ) : (
           <div style={{
@@ -124,7 +136,7 @@ export default function HomePage() {
                   {/* Dish Photo Banner */}
                   <div
                     onClick={() => setSelectedDishForModal(dish)}
-                    style={{ position: 'relative', height: '170px', cursor: 'pointer', backgroundColor: '#E2E8F0' }}
+                    style={{ position: 'relative', height: '180px', cursor: 'pointer', backgroundColor: '#E2E8F0' }}
                   >
                     <img
                       src={dish.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'}
