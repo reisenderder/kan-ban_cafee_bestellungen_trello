@@ -9,73 +9,111 @@ export interface Dish {
   isAvailable: boolean;
   estimatedCookingTimeMinutes?: number;
   badge?: string | null;
+  imageUrl?: string | null;
 }
 
 export const defaultDishes: Dish[] = [
   {
     id: 'dish-1',
-    title: 'Блюдо 1 (Люля-кебаб)',
-    description: 'Традиционный кавказский люля-кебаб из парного мяса со специями и зеленью.',
+    title: 'Люля-кебаб из баранины',
+    description: 'Традиционный кавказский люля-кебаб из сочной баранины со специями, луком и свежей зеленью. Подается с соусом.',
     price: 150,
-    category: 'Категория 1',
+    category: 'Горячие блюда',
     isAvailable: true,
     estimatedCookingTimeMinutes: 15,
     badge: 'Популярное',
+    imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'dish-2',
-    title: 'Блюдо 2 (Шашлык из курицы)',
-    description: 'Сочные кусочки филе в фирменном маринаде на углях.',
+    title: 'Шашлык из курицы',
+    description: 'Нежные кусочки куриного филе в фирменном маринаде, приготовленные на мангале. Сочный и ароматный.',
     price: 200,
-    category: 'Категория 1',
+    category: 'Горячие блюда',
     isAvailable: true,
     estimatedCookingTimeMinutes: 15,
     badge: 'Шеф-выбор',
+    imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'dish-3',
-    title: 'Блюдо 3 (Лимонад)',
-    description: 'Освежающий домашний лимонад с цитрусом и мятой.',
+    title: 'Домашний Лимонад с мятой',
+    description: 'Освежающий цитрусовый лимонад из свежевыжатого лимона, мяты и минеральной воды.',
     price: 180,
-    category: 'Категория 2',
+    category: 'Напитки',
     isAvailable: true,
     estimatedCookingTimeMinutes: 5,
     badge: null,
+    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'dish-4',
-    title: 'Блюдо 4 (Суп Дня)',
-    description: 'Наваристый густой суп на мясном бульоне.',
+    title: 'Суп Дня на мясном бульоне',
+    description: 'Наваристый суп с говядиной, свежими овощами и душистыми травяными специями.',
     price: 250,
-    category: 'Категория 2',
-    isAvailable: false, // Временно в стоп-листе
+    category: 'Супы',
+    isAvailable: false,
     estimatedCookingTimeMinutes: 20,
     badge: null,
+    imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'dish-5',
-    title: 'Блюдо 5 (Салат)',
-    description: 'Свежие овощи с зеленью и оливковым маслом.',
+    title: 'Свежий салат с зеленью',
+    description: 'Хрустящие огурцы, спелые томаты, сладкий перец и свежая зелень с заправкой из оливкового масла.',
     price: 120,
-    category: 'Категория 3',
+    category: 'Салаты',
     isAvailable: true,
     estimatedCookingTimeMinutes: 10,
     badge: null,
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80',
   },
   {
     id: 'dish-6',
-    title: 'Блюдо 6 (Хачапури)',
-    description: 'Горячее хачапури с сыром сулугуни и тягучим желтком.',
+    title: 'Хачапури по-аджарски',
+    description: 'Традиционная лодочка с тягучим сыром сулугуни, сливочным маслом и желтом яйца.',
     price: 300,
-    category: 'Категория 4',
+    category: 'Выпечка',
     isAvailable: true,
     estimatedCookingTimeMinutes: 18,
-    badge: null,
+    badge: 'Новинка',
+    imageUrl: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=600&q=80',
   },
 ];
 
 /**
- * Получить все доступные блюда для Витрины из Supabase DB
+ * Получить все блюда (для панели Администратора)
+ */
+export async function fetchAllDishes(): Promise<Dish[]> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('dishes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data || data.length === 0) {
+      return defaultDishes;
+    }
+
+    return data.map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      description: row.description || '',
+      price: Number(row.price),
+      category: row.category,
+      isAvailable: row.is_available,
+      estimatedCookingTimeMinutes: row.estimated_cooking_time_minutes || 15,
+      badge: row.badge || null,
+      imageUrl: row.image_url || null,
+    }));
+  } catch (err) {
+    return defaultDishes;
+  }
+}
+
+/**
+ * Получить только доступные блюда для Витрины из Supabase DB
  */
 export async function fetchAvailableDishes(): Promise<Dish[]> {
   try {
@@ -86,7 +124,6 @@ export async function fetchAvailableDishes(): Promise<Dish[]> {
       .eq('is_available', true);
 
     if (error || !data || data.length === 0) {
-      // Fallback к локальному списку при отсутствии подключенной СУБД
       return defaultDishes.filter((d) => d.isAvailable);
     }
 
@@ -94,15 +131,69 @@ export async function fetchAvailableDishes(): Promise<Dish[]> {
       id: row.id,
       title: row.title,
       description: row.description || '',
-      price: row.price,
+      price: Number(row.price),
       category: row.category,
       isAvailable: row.is_available,
       estimatedCookingTimeMinutes: row.estimated_cooking_time_minutes || 15,
       badge: row.badge || null,
+      imageUrl: row.image_url || null,
     }));
   } catch (err) {
-    // В локальном окружении возвращаем тестовый список
     return defaultDishes.filter((d) => d.isAvailable);
+  }
+}
+
+/**
+ * Создать новый слот блюда Администратором
+ */
+export async function addNewDishInSupabase(
+  newDish: Omit<Dish, 'id'>
+): Promise<Dish | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('dishes')
+      .insert({
+        title: newDish.title,
+        description: newDish.description,
+        price: newDish.price,
+        category: newDish.category,
+        is_available: newDish.isAvailable,
+        estimated_cooking_time_minutes: newDish.estimatedCookingTimeMinutes || 15,
+        badge: newDish.badge || null,
+        image_url: newDish.imageUrl || null,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      // Резервное добавление в локальный список при отсутствии БД
+      const createdDish: Dish = {
+        id: `dish-${Date.now()}`,
+        ...newDish,
+      };
+      defaultDishes.unshift(createdDish);
+      return createdDish;
+    }
+
+    return {
+      id: data.id,
+      title: data.title,
+      description: data.description || '',
+      price: Number(data.price),
+      category: data.category,
+      isAvailable: data.is_available,
+      estimatedCookingTimeMinutes: data.estimated_cooking_time_minutes || 15,
+      badge: data.badge || null,
+      imageUrl: data.image_url || null,
+    };
+  } catch (err) {
+    const createdDish: Dish = {
+      id: `dish-${Date.now()}`,
+      ...newDish,
+    };
+    defaultDishes.unshift(createdDish);
+    return createdDish;
   }
 }
 
@@ -119,6 +210,12 @@ export async function toggleDishAvailabilityInSupabase(
       .from('dishes')
       .update({ is_available: newAvailable })
       .eq('id', dishId);
+
+    // Обновляем локальный массив для демо
+    const local = defaultDishes.find((d) => d.id === dishId);
+    if (local) {
+      local.isAvailable = newAvailable;
+    }
 
     return !error;
   } catch (err) {

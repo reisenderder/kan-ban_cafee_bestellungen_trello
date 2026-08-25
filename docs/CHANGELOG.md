@@ -35,15 +35,15 @@
 
 ---
 
-## 📝 Шаблон записи для новых замечаний клиента (Пример):
+### 📌 Версия v1.0.1 — Исправление плавающей плашки корзины (25.08.2026)
+* **Источник**: Фидбек по результатам тестового показа
 
-```markdown
-### 📌 Версия v1.0.1 — [Дата]
-* **Источник**: Фидбек клиента / Замечания по результатам показа
+#### 🎨 [DESIGN] & ⚙️ [FEATURE]
+* **Исправление плавающей панели корзины**: В компоненте [`components/Navbar.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/components/Navbar.tsx) добавлено автоматическое скрытие всплывающей нижней плашки *«Посмотреть корзину»* в момент открытия шторки корзины (`isCartOpen === true`), чтобы плашка не перекрывала кнопку *«Оформить заказ»*.
+* **Создание слотов блюд в Панели Админа**: В [`app/admin/dashboard/page.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/app/admin/dashboard/page.tsx) добавлена форма `➕ Добавить новое блюдо` (создание новых слотов с указанием названия, категории, цены в EGP, подробного описания состава, ссылки на фото и времени готовки).
+* **Фото блюд и модальное окно подробного ознакомления**: В [`app/page.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/app/page.tsx) добавлены превью-фотографии блюд и полноразмерное модальное окно подробного ознакомления со специями, составом ингредиентов и кнопкой «В корзину».
+* **Возврат заказов из отдела урегулирования в CRM**: В [`app/manager/crm/page.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/app/manager/crm/page.tsx) для заказов в проблемной колонке добавлена кнопка `↩️ Вернуть заказ в работу`, позволяющая менеджеру мгновенно выводить спорный заказ обратно в статус «Приняты в работу».
+* **Канал получения OTP-кода (Telegram / Email)**: В компоненте [`components/CartDrawer.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/components/CartDrawer.tsx) внедрен явный переключатель каналов OTP-кода (вкладки Telegram и Email) с отдельными полями ввода `@username` в Telegram или Email-адреса.
+* **Двусторонний чат заказа и счётчик непрочитанных у менеджера**: Создан модальный клиентский чат [`components/ClientOrderChatModal.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/components/ClientOrderChatModal.tsx), открывающийся клиенту после OTP-верификации. На карточке заказа в CRM Менеджера ([`app/manager/crm/page.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/app/manager/crm/page.tsx)) внедрен счётчик непрочитанных входящих сообщений `🔴 (N)`, который автоматически обнуляется при открытии и прочтении диалога менеджером.
+* **Кнопка очистки корзины в 1 клик**: В шапку выезжающей корзины [`components/CartDrawer.tsx`](file:///C:/Users/Bergmann/Desktop/angular/%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D1%8B/kan-ban_cafee_bestellungen_trello/components/CartDrawer.tsx) добавлена быстрая кнопка `🗑️ Очистить`, позволяющая сбросить все выбранные позиций за один клик.
 
-#### 🎨 [DESIGN]
-* [Описание изменения в дизайне]
-
-#### ⚙️ [FEATURE]
-* [Описание изменения логики]
-```

@@ -1,20 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { KitchenTicketPrint, KitchenTicketData } from '../../../components/KitchenTicketPrint';
 
-interface CrmOrder {
+export interface CrmOrder {
   id: string;
   orderNumber: string;
   customerName: string;
   customerPhoneMasked: string;
   address: string;
-  status: 'NEW' | 'ACCEPTED' | 'COOKING' | 'READY_FOR_DELIVERY' | 'IN_TRANSIT' | 'DELIVERED' | 'PROBLEM';
+  status: 'NEW' | 'ACCEPTED' | 'COOKING' | 'READY_FOR_DELIVERY' | 'DELIVERING' | 'COMPLETED' | 'PROBLEM';
   itemsSummary: string;
   totalAmount: number;
   createdAt: string;
   items: { name: string; quantity: number }[];
   chatMessages?: { sender: 'CLIENT' | 'MANAGER'; text: string; time: string }[];
+  unreadMessagesCount?: number;
 }
 
 const initialOrders: CrmOrder[] = [
@@ -32,9 +32,11 @@ const initialOrders: CrmOrder[] = [
       { name: 'Люля-кебаб', quantity: 2 },
       { name: 'Лимонад', quantity: 1 },
     ],
+    unreadMessagesCount: 2,
     chatMessages: [
       { sender: 'CLIENT', text: 'Здравствуйте! Уточните, соус острый?', time: '10:16' },
-      { sender: 'MANAGER', text: 'Добрый день! Нет, соус традиционный нежный, острый по желанию.', time: '10:17' },
+      { sender: 'CLIENT', text: 'И можно положить больше салфеток?', time: '10:17' },
+      { sender: 'MANAGER', text: 'Добрый день! Нет, соус традиционный нежный. Салфетки добавим!', time: '10:18' },
     ],
   },
   {
@@ -47,6 +49,7 @@ const initialOrders: CrmOrder[] = [
     itemsSummary: 'Шашлык x1, Суп дня x2',
     totalAmount: 700,
     createdAt: '10:05',
+    unreadMessagesCount: 0,
     items: [
       { name: 'Шашлык из курицы', quantity: 1 },
       { name: 'Суп дня', quantity: 2 },
@@ -62,19 +65,41 @@ const initialOrders: CrmOrder[] = [
     itemsSummary: 'Хачапури x1, Лимонад x3',
     totalAmount: 840,
     createdAt: '09:45',
+    unreadMessagesCount: 1,
     items: [
       { name: 'Хачапури по-аджарски', quantity: 1 },
       { name: 'Лимонад', quantity: 3 },
+    ],
+    chatMessages: [
+      { sender: 'CLIENT', text: 'Сколько примерно осталось времени готовки?', time: '09:50' },
     ],
   },
 ];
 
 export default function ManagerCrmPage() {
   const [orders, setOrders] = useState<CrmOrder[]>(initialOrders);
-  const [activeTicket, setActiveTicket] = useState<KitchenTicketData | null>(null);
   const [selectedChatOrder, setSelectedChatOrder] = useState<CrmOrder | null>(null);
-  const [chatInputText, setChatInputText] = useState<string>('');
+  const [newMsgText, setNewMsgText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Status columns in Kanban
+  const columns: { title: string; status: CrmOrder['status']; color: string }[] = [
+    { title: 'Новые заказы', status: 'NEW', color: 'var(--color-marigold-zest)' },
+    { title: 'Приняты в работу', status: 'ACCEPTED', color: 'var(--color-deep-forest)' },
+    { title: 'Готовятся', status: 'COOKING', color: 'var(--color-deep-forest)' },
+    { title: 'Готовы к выдаче', status: 'READY_FOR_DELIVERY', color: 'var(--color-success)' },
+    { title: 'Доставляются', status: 'DELIVERING', color: 'var(--color-deep-forest)' },
+    { title: 'Завершённые', status: 'COMPLETED', color: 'var(--color-text-muted)' },
+    { title: 'Проблема / Урегулирование', status: 'PROBLEM', color: 'var(--color-error)' },
+  ];
+
+  // Open Chat Drawer and Reset Unread Counter to 0
+  const handleOpenChat = (order: CrmOrder) => {
+    setSelectedChatOrder(order);
+    setOrders((prev) =>
+      prev.map((o) => (o.id === order.id ? { ...o, unreadMessagesCount: 0 } : o))
+    );
+  };
 
   const updateOrderStatus = (orderId: string, newStatus: CrmOrder['status']) => {
     setOrders((prev) =>
@@ -82,41 +107,39 @@ export default function ManagerCrmPage() {
     );
   };
 
-  const handlePrintKitchenTicket = (order: CrmOrder) => {
-    const ticketData: KitchenTicketData = {
-      ticketNumber: Math.floor(100 + Math.random() * 900),
-      orderNumber: order.orderNumber,
-      printedAt: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-      items: order.items,
-    };
-    setActiveTicket(ticketData);
-    updateOrderStatus(order.id, 'COOKING');
-  };
-
-  // Courier Copy Helper (Universal Clipboard)
+  // Copy order text for courier
   const handleCopyForCourier = (order: CrmOrder) => {
-    const text = `🛵 *ЗАКАЗ НА ДОСТАВКУ #${order.orderNumber}*
-👤 Клиент: ${order.customerName} (${order.customerPhoneMasked})
-📍 Адрес: ${order.address}
-🍲 Блюда: ${order.itemsSummary}
-💰 К оплате: ${order.totalAmount} EGP`;
+    const courierText = `🚴 ДОСТАВКА DAYMOHKCOFEE\n\n` +
+      `📦 Заказ: #${order.orderNumber}\n` +
+      `👤 Клиент: ${order.customerName}\n` +
+      `📞 Телефон: ${order.customerPhoneMasked}\n` +
+      `📍 Адрес: ${order.address}\n\n` +
+      `🍲 Состав заказа:\n${order.itemsSummary}\n\n` +
+      `💵 Итого к оплате наличными: ${order.totalAmount} EGP`;
 
     if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(courierText);
       setNotification(`✓ Детали заказа #${order.orderNumber} скопированы в буфер обмена!`);
     } else {
-      alert(text);
+      alert(`Скопировано:\n\n${courierText}`);
     }
   };
 
-  // Send Chat Message as Manager
-  const handleSendChatMessage = () => {
-    if (!selectedChatOrder || !chatInputText.trim()) return;
+  // Kitchen print ticket simulation
+  const handlePrintKitchenTicket = (order: CrmOrder) => {
+    updateOrderStatus(order.id, 'COOKING');
+    alert(`🍳 Чек заказа #${order.orderNumber} отправлен на кухню!\nСтатус изменён на "COOKING".`);
+  };
+
+  // Send message in chat
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedChatOrder || !newMsgText.trim()) return;
 
     const newMsg = {
       sender: 'MANAGER' as const,
-      text: chatInputText.trim(),
-      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      text: newMsgText.trim(),
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
     setOrders((prev) =>
@@ -124,36 +147,34 @@ export default function ManagerCrmPage() {
         if (o.id === selectedChatOrder.id) {
           const updatedChat = [...(o.chatMessages || []), newMsg];
           setSelectedChatOrder({ ...o, chatMessages: updatedChat });
-          return { ...o, chatMessages: updatedChat };
+          return { ...o, chatMessages: updatedChat, unreadMessagesCount: 0 };
         }
         return o;
       })
     );
-    setChatInputText('');
+
+    setNewMsgText('');
   };
 
-  const columns: { status: CrmOrder['status']; title: string; color: string }[] = [
-    { status: 'NEW', title: 'Новые заказы', color: 'var(--color-warm-terracotta)' },
-    { status: 'ACCEPTED', title: 'Приняты в работу', color: 'var(--color-marigold-zest)' },
-    { status: 'COOKING', title: 'На кухне (В готовке)', color: 'var(--color-info)' },
-    { status: 'READY_FOR_DELIVERY', title: 'Готовы к доставке', color: 'var(--color-success)' },
-    { status: 'PROBLEM', title: 'Проблема / Урегулирование', color: 'var(--color-error)' },
-  ];
-
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '32px 24px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <span className="badge badge-forest">CRM Менеджера</span>
-            <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>● Realtime WebSocket Enabled</span>
-          </div>
-          <h1 style={{ fontSize: '2.2rem', margin: '6px 0 0 0', fontWeight: 800 }}>CRM Менеджера | DAYMOHKCOFEE</h1>
+          <span className="badge badge-forest" style={{ marginBottom: '4px' }}>Рабочий контур</span>
+          <h1 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 800 }}>CRM Менеджера Заказов DAYMOHKCOFEE</h1>
+        </div>
+
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <a href="/kitchen/dashboard" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+            🍳 Электронный экран повара (KDS)
+          </a>
+          <a href="/admin/dashboard" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+            ⚙️ Админка
+          </a>
         </div>
       </div>
 
-      {/* Notification Banner */}
       {notification && (
         <div
           className="animate-fade-in"
@@ -161,65 +182,70 @@ export default function ManagerCrmPage() {
             backgroundColor: 'rgba(46, 125, 50, 0.15)',
             border: '1px solid var(--color-success)',
             color: 'var(--color-success)',
-            padding: '14px 20px',
+            padding: '12px 16px',
             borderRadius: 'var(--radius-md)',
-            marginBottom: '24px',
-            fontWeight: 600,
+            marginBottom: '20px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            fontWeight: 700,
           }}
         >
-          <span>✓ {notification}</span>
+          <span>{notification}</span>
           <button
             onClick={() => setNotification(null)}
-            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '1.2rem' }}
+            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 'bold' }}
           >
             &times;
           </button>
         </div>
       )}
 
-      {/* Sunsama-styled Kanban Board Grid */}
+      {/* Kanban Board */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '20px',
-          alignItems: 'start',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '16px',
+          overflowX: 'auto',
+          paddingBottom: '24px',
         }}
       >
         {columns.map((col) => {
           const colOrders = orders.filter((o) => o.status === col.status);
+
           return (
             <div
               key={col.status}
               style={{
                 backgroundColor: 'var(--color-surface-subtle)',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-md)',
                 padding: '16px',
                 border: '1px solid var(--color-border)',
-                minHeight: '480px',
+                minWidth: '270px',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
               {/* Column Header */}
               <div
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
                   justifyContent: 'space-between',
+                  alignItems: 'center',
                   marginBottom: '16px',
-                  paddingBottom: '12px',
-                  borderBottom: `3px solid ${col.color}`,
+                  paddingBottom: '8px',
+                  borderBottom: `2px solid ${col.color}`,
                 }}
               >
-                <h3 style={{ fontSize: '1.05rem', margin: 0, fontWeight: 700 }}>{col.title}</h3>
+                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>{col.title}</h3>
                 <span
                   style={{
-                    backgroundColor: 'var(--color-surface)',
-                    padding: '2px 10px',
+                    backgroundColor: col.color,
+                    color: col.status === 'NEW' ? 'var(--color-deep-forest)' : '#FFF',
                     borderRadius: 'var(--radius-full)',
-                    fontSize: '0.8rem',
+                    padding: '2px 8px',
+                    fontSize: '0.75rem',
                     fontWeight: 800,
                   }}
                 >
@@ -228,11 +254,19 @@ export default function ManagerCrmPage() {
               </div>
 
               {/* Order Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                 {colOrders.length === 0 ? (
-                  <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '20px 0' }}>
+                  <div
+                    style={{
+                      textAlign: 'center',
+                      padding: '24px 0',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '0.85rem',
+                      fontStyle: 'italic',
+                    }}
+                  >
                     Нет заказов
-                  </p>
+                  </div>
                 ) : (
                   colOrders.map((ord) => (
                     <div
@@ -240,129 +274,158 @@ export default function ManagerCrmPage() {
                       style={{
                         backgroundColor: 'var(--color-surface)',
                         borderRadius: 'var(--radius-md)',
-                        padding: '16px',
+                        padding: '14px',
                         border: '1px solid var(--color-border)',
                         boxShadow: 'var(--shadow-sm)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--color-deep-forest)' }}>
-                          {ord.orderNumber}
-                        </span>
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{ord.createdAt}</span>
-                      </div>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-deep-forest)' }}>
+                            #{ord.orderNumber}
+                          </span>
+                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{ord.createdAt}</span>
+                        </div>
 
-                      <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{ord.customerName}</p>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '4px' }}>
-                        📍 {ord.address}
-                      </p>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>
-                        📞 {ord.customerPhoneMasked}
-                      </p>
+                        <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{ord.customerName}</p>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '4px' }}>
+                          📍 {ord.address}
+                        </p>
+                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>
+                          📞 {ord.customerPhoneMasked}
+                        </p>
 
-                      <div
-                        style={{
-                          backgroundColor: 'var(--color-surface-subtle)',
-                          padding: '8px 10px',
-                          borderRadius: 'var(--radius-sm)',
-                          fontSize: '0.85rem',
-                          marginBottom: '12px',
-                        }}
-                      >
-                        <strong>Состав:</strong> {ord.itemsSummary}
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-deep-forest)' }}>
-                          {ord.totalAmount} EGP
-                        </span>
-                        <button
-                          onClick={() => setSelectedChatOrder(ord)}
+                        <div
                           style={{
-                            padding: '4px 10px',
-                            borderRadius: 'var(--radius-full)',
-                            border: '1px solid var(--color-border)',
-                            backgroundColor: 'var(--color-surface)',
-                            color: 'var(--color-deep-forest)',
-                            fontWeight: 600,
-                            fontSize: '0.75rem',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          💬 Чат ({ord.chatMessages?.length || 0})
-                        </button>
-                      </div>
-
-                      {/* Context Actions */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {ord.status === 'NEW' && (
-                          <button
-                            className="btn-primary"
-                            style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
-                            onClick={() => updateOrderStatus(ord.id, 'ACCEPTED')}
-                          >
-                            Принять в работу
-                          </button>
-                        )}
-
-                        {ord.status === 'ACCEPTED' && (
-                          <button
-                            className="btn-secondary"
-                            style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
-                            onClick={() => handlePrintKitchenTicket(ord)}
-                          >
-                            🍳 Отправить на Кухню (Печать)
-                          </button>
-                        )}
-
-                        {ord.status === 'COOKING' && (
-                          <button
-                            className="btn-primary"
-                            style={{ width: '100%', padding: '8px', fontSize: '0.85rem', backgroundColor: 'var(--color-success)' }}
-                            onClick={() => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY')}
-                          >
-                            ✓ Отметить готовность
-                          </button>
-                        )}
-
-                        {/* Universal Courier Copy Button */}
-                        <button
-                          onClick={() => handleCopyForCourier(ord)}
-                          style={{
-                            width: '100%',
-                            padding: '8px',
+                            backgroundColor: 'var(--color-surface-subtle)',
+                            padding: '8px 10px',
                             borderRadius: 'var(--radius-sm)',
-                            border: '1px solid var(--color-success)',
-                            backgroundColor: 'rgba(46, 125, 50, 0.08)',
-                            color: 'var(--color-success)',
-                            fontWeight: 700,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '6px',
+                            fontSize: '0.85rem',
+                            marginBottom: '12px',
                           }}
                         >
-                          📋 Скопировать детали для курьера
-                        </button>
+                          <strong>Состав:</strong> {ord.itemsSummary}
+                        </div>
 
-                        {ord.status !== 'PROBLEM' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-deep-forest)' }}>
+                            {ord.totalAmount} EGP
+                          </span>
+
+                          {/* Chat Launcher Button with Live Unread Messages Counter */}
                           <button
-                            onClick={() => updateOrderStatus(ord.id, 'PROBLEM')}
+                            onClick={() => handleOpenChat(ord)}
                             style={{
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--color-error)',
+                              padding: '4px 10px',
+                              borderRadius: 'var(--radius-full)',
+                              border: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'none' : '1px solid var(--color-border)',
+                              backgroundColor: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'var(--color-warm-terracotta)' : 'var(--color-surface)',
+                              color: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? '#FFF' : 'var(--color-deep-forest)',
+                              fontWeight: 700,
                               fontSize: '0.75rem',
                               cursor: 'pointer',
-                              textAlign: 'center',
-                              marginTop: '2px',
+                              boxShadow: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'var(--shadow-sm)' : 'none',
                             }}
                           >
-                            ⚠️ Эскалация в урегулирование
+                            💬 Чат {ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? `🔴 (${ord.unreadMessagesCount} нов.)` : `(${ord.chatMessages?.length || 0})`}
                           </button>
-                        )}
+                        </div>
+
+                        {/* Context Actions */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {ord.status === 'NEW' && (
+                            <button
+                              className="btn-primary"
+                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
+                              onClick={() => updateOrderStatus(ord.id, 'ACCEPTED')}
+                            >
+                              Принять в работу
+                            </button>
+                          )}
+
+                          {ord.status === 'ACCEPTED' && (
+                            <button
+                              className="btn-secondary"
+                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
+                              onClick={() => handlePrintKitchenTicket(ord)}
+                            >
+                              🍳 Отправить на Кухню (Печать)
+                            </button>
+                          )}
+
+                          {ord.status === 'COOKING' && (
+                            <button
+                              className="btn-primary"
+                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem', backgroundColor: 'var(--color-success)' }}
+                              onClick={() => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY')}
+                            >
+                              ✓ Отметить готовность
+                            </button>
+                          )}
+
+                          {/* Universal Courier Copy Button */}
+                          <button
+                            onClick={() => handleCopyForCourier(ord)}
+                            style={{
+                              width: '100%',
+                              padding: '8px',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid var(--color-success)',
+                              backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                              color: 'var(--color-success)',
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              justifyContent: 'center',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            📋 Скопировать детали для курьера
+                          </button>
+
+                          {ord.status === 'PROBLEM' && (
+                            <button
+                              className="btn-primary"
+                              style={{
+                                width: '100%',
+                                padding: '8px',
+                                fontSize: '0.85rem',
+                                backgroundColor: 'var(--color-deep-forest)',
+                              }}
+                              onClick={() => {
+                                updateOrderStatus(ord.id, 'ACCEPTED');
+                                setNotification(`✓ Заказ #${ord.orderNumber} выведен из урегулирования и возвращён в работу!`);
+                              }}
+                            >
+                              ↩️ Вернуть заказ в работу
+                            </button>
+                          )}
+
+                          {ord.status !== 'PROBLEM' && (
+                            <button
+                              onClick={() => {
+                                updateOrderStatus(ord.id, 'PROBLEM');
+                                setNotification(`⚠️ Заказ #${ord.orderNumber} отправлен в урегулирование.`);
+                              }}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--color-error)',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                textAlign: 'center',
+                                marginTop: '2px',
+                              }}
+                            >
+                              ⚠️ Эскалация в урегулирование
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -373,13 +436,13 @@ export default function ManagerCrmPage() {
         })}
       </div>
 
-      {/* Chat Drawer Modal */}
+      {/* REALTIME CHAT DRAWER MODAL */}
       {selectedChatOrder && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0,0,0,0.5)',
             zIndex: 1000,
             display: 'flex',
             justifyContent: 'flex-end',
@@ -389,7 +452,7 @@ export default function ManagerCrmPage() {
             className="animate-fade-in"
             style={{
               width: '100%',
-              maxWidth: '450px',
+              maxWidth: '420px',
               backgroundColor: 'var(--color-surface)',
               height: '100%',
               display: 'flex',
@@ -397,24 +460,21 @@ export default function ManagerCrmPage() {
               boxShadow: 'var(--shadow-lg)',
             }}
           >
-            {/* Chat Modal Header */}
+            {/* Modal Header */}
             <div
               style={{
-                padding: '20px',
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
                 backgroundColor: 'var(--color-deep-forest)',
                 color: 'var(--color-vanilla-cream)',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
               }}
             >
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#FFF' }}>
-                  💬 Чат по заказу #{selectedChatOrder.orderNumber}
-                </h3>
-                <span style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-                  Клиент: {selectedChatOrder.customerName}
-                </span>
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Чат заказа #{selectedChatOrder.orderNumber}</h3>
+                <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>Клиент: {selectedChatOrder.customerName}</span>
               </div>
               <button
                 onClick={() => setSelectedChatOrder(null)}
@@ -424,61 +484,57 @@ export default function ManagerCrmPage() {
               </button>
             </div>
 
-            {/* Chat Messages Body */}
-            <div style={{ padding: '20px', flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {!selectedChatOrder.chatMessages || selectedChatOrder.chatMessages.length === 0 ? (
-                <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 'auto' }}>
-                  В этом чате пока нет сообщений.
-                </p>
+            {/* Chat Body */}
+            <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {(!selectedChatOrder.chatMessages || selectedChatOrder.chatMessages.length === 0) ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+                  Сообщений по заказу пока нет
+                </div>
               ) : (
                 selectedChatOrder.chatMessages.map((msg, idx) => (
                   <div
                     key={idx}
                     style={{
                       alignSelf: msg.sender === 'MANAGER' ? 'flex-end' : 'flex-start',
-                      maxWidth: '80%',
                       backgroundColor: msg.sender === 'MANAGER' ? 'var(--color-deep-forest)' : 'var(--color-surface-subtle)',
-                      color: msg.sender === 'MANAGER' ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
+                      color: msg.sender === 'MANAGER' ? '#FFF' : 'var(--color-text-primary)',
                       padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
+                      borderRadius: '12px',
+                      maxWidth: '80%',
                       fontSize: '0.9rem',
                     }}
                   >
                     <div>{msg.text}</div>
-                    <div style={{ fontSize: '0.7rem', opacity: 0.7, textAlign: 'right', marginTop: '4px' }}>
-                      {msg.sender === 'MANAGER' ? 'Вы (Менеджер)' : 'Клиент'} • {msg.time}
+                    <div style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '4px', textAlign: 'right' }}>
+                      {msg.time}
                     </div>
                   </div>
                 ))
               )}
             </div>
 
-            {/* Chat Input Footer */}
-            <div style={{ padding: '16px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '10px' }}>
+            {/* Chat Input */}
+            <form onSubmit={handleSendMessage} style={{ padding: '16px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '8px' }}>
               <input
                 type="text"
-                placeholder="Напишите ответ клиенту..."
-                value={chatInputText}
-                onChange={(e) => setChatInputText(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendChatMessage()}
+                value={newMsgText}
+                onChange={(e) => setNewMsgText(e.target.value)}
+                placeholder="Ответить клиенту..."
                 style={{
-                  flexGrow: 1,
-                  padding: '12px',
+                  flex: 1,
+                  padding: '10px 14px',
                   borderRadius: 'var(--radius-md)',
                   border: '1px solid var(--color-border)',
                   fontSize: '0.9rem',
-                  outline: 'none',
                 }}
               />
-              <button onClick={handleSendChatMessage} className="btn-primary" style={{ padding: '12px 18px' }}>
+              <button className="btn-primary" type="submit" style={{ padding: '10px 16px', fontSize: '0.85rem' }}>
                 Отправить
               </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
-
-      <KitchenTicketPrint ticket={activeTicket} onClose={() => setActiveTicket(null)} />
     </div>
   );
 }
