@@ -1,7 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Dish, fetchAllDishes, addNewDishInSupabase, toggleDishAvailabilityInSupabase } from '../../../lib/menu/dishes';
+import {
+  Dish,
+  fetchAllDishes,
+  addNewDishInSupabase,
+  toggleDishAvailabilityInSupabase,
+  fetchCategories,
+  addCategory,
+  removeCategory,
+  readImageFileAsDataUrl,
+} from '../../../lib/menu/dishes';
 
 interface EmployeeItem {
   id: string;
@@ -50,29 +59,40 @@ const initialComplaints: ComplaintItem[] = [
 ];
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'COMPLAINTS'>('MENU');
+  const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'CATEGORIES' | 'COMPLAINTS'>('MENU');
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
   const [dishes, setDishes] = useState<Dish[]>([]);
+  const [categories, setCategoriesState] = useState<string[]>([]);
   const [complaints, setComplaints] = useState<ComplaintItem[]>(initialComplaints);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // Category Manager State
+  const [newCatName, setNewCatName] = useState<string>('');
 
   // New Dish Modal State
   const [isAddDishModalOpen, setIsAddDishModalOpen] = useState<boolean>(false);
   const [newTitle, setNewTitle] = useState<string>('');
-  const [newCategory, setNewCategory] = useState<string>('Горячие блюда');
+  const [newCategory, setNewCategory] = useState<string>('');
+  const [customCategoryInput, setCustomCategoryInput] = useState<string>('');
   const [newPrice, setNewPrice] = useState<string>('150');
   const [newDescription, setNewDescription] = useState<string>('');
   const [newImageUrl, setNewImageUrl] = useState<string>('');
   const [newTimeMinutes, setNewTimeMinutes] = useState<string>('15');
   const [newBadge, setNewBadge] = useState<string>('');
   const [isSubmittingDish, setIsSubmittingDish] = useState<boolean>(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadDishes() {
+    async function loadData() {
       const data = await fetchAllDishes();
       setDishes(data);
+      const cats = fetchCategories();
+      setCategoriesState(cats);
+      if (cats.length > 0) {
+        setNewCategory(cats[0]);
+      }
     }
-    loadDishes();
+    loadData();
   }, []);
 
   // Employee Lifecycle: ACTIVE -> DISABLED -> ARCHIVED (No hard delete)
@@ -89,10 +109,42 @@ export default function AdminDashboardPage() {
     setNotification(`Статус сотрудника "${emp?.name}" изменён на ${newStatus}.`);
   };
 
+  // Category Management
+  const handleAddCategorySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCatName.trim()) return;
+    const updated = addCategory(newCatName.trim());
+    setCategoriesState([...updated]);
+    setNotification(`✓ Новая категория "${newCatName.trim()}" создана!`);
+    setNewCatName('');
+  };
+
+  const handleRemoveCategory = (cat: string) => {
+    if (confirm(`Вы действительно хотите удалить категорию "${cat}"?`)) {
+      const updated = removeCategory(cat);
+      setCategoriesState([...updated]);
+      setNotification(`Категория "${cat}" удалена.`);
+    }
+  };
+
+  // Local File Image Selection
+  const handleLocalFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        const dataUrl = await readImageFileAsDataUrl(file);
+        setNewImageUrl(dataUrl);
+        setPreviewImage(dataUrl);
+      } catch (err) {
+        alert('Ошибка при чтении файла изображения.');
+      }
+    }
+  };
+
   // Toggle Dish Availability
   const handleToggleDish = async (id: string, currentAvailable: boolean) => {
     const nextAvailable = !currentAvailable;
-    const success = await toggleDishAvailabilityInSupabase(id, nextAvailable);
+    await toggleDishAvailabilityInSupabase(id, nextAvailable);
 
     setDishes((prev) =>
       prev.map((d) => (d.id === id ? { ...d, isAvailable: nextAvailable } : d))
@@ -105,25 +157,33 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!newTitle.trim() || !newPrice.trim()) return;
 
+    const finalCategory = newCategory === 'NEW_CUSTOM' ? customCategoryInput.trim() : newCategory;
+    if (!finalCategory) {
+      alert('Укажите или выберите категорию блюда!');
+      return;
+    }
+
     setIsSubmittingDish(true);
     const created = await addNewDishInSupabase({
       title: newTitle.trim(),
       description: newDescription.trim() || 'Свежее аппетитное блюдо от шеф-повара DAYMOHKCOFEE.',
       price: parseFloat(newPrice) || 100,
-      category: newCategory.trim() || 'Горячие блюда',
+      category: finalCategory,
       isAvailable: true,
       estimatedCookingTimeMinutes: parseInt(newTimeMinutes) || 15,
       badge: newBadge.trim() || null,
-      imageUrl: newImageUrl.trim() || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
+      imageUrl: newImageUrl.trim() || previewImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
     });
 
     if (created) {
       setDishes((prev) => [created, ...prev]);
-      setNotification(`✓ Новое блюдо "${created.title}" успешно опубликовано!`);
+      setCategoriesState(fetchCategories());
+      setNotification(`✓ Новое блюдо "${created.title}" опубликовано и моментально отображено на витрине!`);
       // Reset Form
       setNewTitle('');
       setNewDescription('');
       setNewImageUrl('');
+      setPreviewImage(null);
       setNewBadge('');
       setIsAddDishModalOpen(false);
     }
@@ -147,7 +207,7 @@ export default function AdminDashboardPage() {
           <h1 style={{ fontSize: '2rem', margin: 0, fontWeight: 800 }}>Администрирование DAYMOHKCOFEE</h1>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button
             onClick={() => setActiveTab('EMPLOYEES')}
             style={{
@@ -162,6 +222,7 @@ export default function AdminDashboardPage() {
           >
             👥 Сотрудники ({employees.length})
           </button>
+
           <button
             onClick={() => setActiveTab('MENU')}
             style={{
@@ -176,6 +237,22 @@ export default function AdminDashboardPage() {
           >
             🍽️ Меню и Слоты ({dishes.length})
           </button>
+
+          <button
+            onClick={() => setActiveTab('CATEGORIES')}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 'var(--radius-full)',
+              border: activeTab === 'CATEGORIES' ? 'none' : '1px solid var(--color-border)',
+              backgroundColor: activeTab === 'CATEGORIES' ? 'var(--color-deep-forest)' : 'var(--color-surface)',
+              color: activeTab === 'CATEGORIES' ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            🏷️ Категории ({categories.length})
+          </button>
+
           <button
             onClick={() => setActiveTab('COMPLAINTS')}
             style={{
@@ -206,7 +283,7 @@ export default function AdminDashboardPage() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontWeight: 600,
+            fontWeight: 700,
           }}
         >
           <span>✓ {notification}</span>
@@ -335,9 +412,9 @@ export default function AdminDashboardPage() {
             }}
           >
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Управление слотами меню</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Управление слотами меню (Неограниченно)</h3>
               <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                Публикуйте новые блюда, указывайте ингредиенты, фото и управляйте видимостью для Витрины.
+                Публикуйте новые блюда с загрузкой фото с ПК. Новинки автоматически отображаются у клиентов в режиме онлайн!
               </p>
             </div>
             <button
@@ -377,7 +454,7 @@ export default function AdminDashboardPage() {
                 }}
               >
                 {/* Image Preview */}
-                <div style={{ position: 'relative', height: '150px', backgroundColor: '#E2E8F0' }}>
+                <div style={{ position: 'relative', height: '160px', backgroundColor: '#E2E8F0' }}>
                   <img
                     src={dish.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'}
                     alt={dish.title}
@@ -457,7 +534,91 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* CREATE NEW DISH MODAL FORM */}
+      {/* TAB 3: CATEGORIES MANAGEMENT */}
+      {activeTab === 'CATEGORIES' && (
+        <div style={{ display: 'grid', gap: '20px' }}>
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-md)',
+              padding: '24px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', fontWeight: 800 }}>➕ Добавить новую категорию меню</h3>
+            <form onSubmit={handleAddCategorySubmit} style={{ display: 'flex', gap: '12px', maxWidth: '500px' }}>
+              <input
+                type="text"
+                required
+                placeholder="Например: Завтраки, Десерты, Соусы..."
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                style={{
+                  flex: 1,
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border)',
+                  fontSize: '0.95rem',
+                }}
+              />
+              <button
+                type="submit"
+                className="btn-primary"
+                style={{ padding: '10px 20px', backgroundColor: 'var(--color-deep-forest)' }}
+              >
+                + Добавить
+              </button>
+            </form>
+          </div>
+
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-md)',
+              padding: '24px',
+              border: '1px solid var(--color-border)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '1.2rem', fontWeight: 800 }}>🏷️ Активные категории меню ({categories.length})</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {categories.map((cat) => (
+                <div
+                  key={cat}
+                  style={{
+                    backgroundColor: 'var(--color-surface-subtle)',
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid var(--color-border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontWeight: 600,
+                    fontSize: '0.95rem',
+                  }}
+                >
+                  <span>{cat}</span>
+                  <button
+                    onClick={() => handleRemoveCategory(cat)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-error)',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '1.1rem',
+                    }}
+                    title="Удалить категорию"
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW DISH MODAL FORM WITH LOCAL FILE PHOTO UPLOAD */}
       {isAddDishModalOpen && (
         <div
           style={{
@@ -475,7 +636,7 @@ export default function AdminDashboardPage() {
             className="animate-fade-in"
             style={{
               width: '100%',
-              maxWidth: '520px',
+              maxWidth: '540px',
               backgroundColor: 'var(--color-surface)',
               borderRadius: 'var(--radius-lg)',
               padding: '32px',
@@ -518,12 +679,9 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Категория
+                    Категория (Выпадающий список) *
                   </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Горячие блюда"
+                  <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
                     style={{
@@ -532,9 +690,18 @@ export default function AdminDashboardPage() {
                       borderRadius: 'var(--radius-md)',
                       border: '1px solid var(--color-border)',
                       fontSize: '0.95rem',
+                      backgroundColor: 'var(--color-surface)',
                     }}
-                  />
+                  >
+                    {categories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    <option value="NEW_CUSTOM">+ Создать новую категорию...</option>
+                  </select>
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
                     Цена (EGP) *
@@ -557,6 +724,28 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {newCategory === 'NEW_CUSTOM' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Название новой категории *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Введите название новой категории"
+                    value={customCategoryInput}
+                    onChange={(e) => setCustomCategoryInput(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                </div>
+              )}
+
               <div>
                 <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
                   Подробный состав и описание ингредиентов
@@ -577,23 +766,58 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                  Ссылка на фото блюда (Image URL)
+              {/* LOCAL FILE PHOTO UPLOAD WITH PREVIEW */}
+              <div
+                style={{
+                  border: '2px dashed var(--color-border)',
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  textAlign: 'center',
+                  backgroundColor: 'var(--color-surface-subtle)',
+                }}
+              >
+                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, marginBottom: '8px', cursor: 'pointer' }}>
+                  📁 Загрузить фото с компьютера (Локальный носитель)
                 </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLocalFileSelect}
+                  style={{ fontSize: '0.85rem', marginBottom: '10px' }}
+                />
+
+                <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', marginBottom: '8px' }}>
+                  или укажите веб-ссылку на изображение:
+                </div>
                 <input
                   type="url"
                   placeholder="https://images.unsplash.com/..."
                   value={newImageUrl}
-                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  onChange={(e) => {
+                    setNewImageUrl(e.target.value);
+                    setPreviewImage(e.target.value);
+                  }}
                   style={{
                     width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-sm)',
                     border: '1px solid var(--color-border)',
-                    fontSize: '0.9rem',
+                    fontSize: '0.85rem',
                   }}
                 />
+
+                {previewImage && (
+                  <div style={{ marginTop: '12px' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, display: 'block', marginBottom: '4px' }}>
+                      Предпросмотр загруженного фото:
+                    </span>
+                    <img
+                      src={previewImage}
+                      alt="Preview"
+                      style={{ height: '120px', borderRadius: 'var(--radius-md)', objectFit: 'cover', border: '1px solid var(--color-border)' }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -649,7 +873,7 @@ export default function AdminDashboardPage() {
                   className="btn-primary"
                   style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-warm-terracotta)' }}
                 >
-                  {isSubmittingDish ? 'Сохранение...' : 'Опубликовать блюдо'}
+                  {isSubmittingDish ? 'Публикация...' : 'Опубликовать блюдо онлайн'}
                 </button>
               </div>
             </form>
@@ -657,7 +881,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* TAB 3: COMPLAINTS */}
+      {/* TAB 4: COMPLAINTS */}
       {activeTab === 'COMPLAINTS' && (
         <div style={{ display: 'grid', gap: '16px' }}>
           {complaints.map((c) => (

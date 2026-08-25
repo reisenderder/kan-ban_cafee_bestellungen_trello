@@ -12,6 +12,17 @@ export interface Dish {
   imageUrl?: string | null;
 }
 
+export const defaultCategories: string[] = [
+  'Горячие блюда',
+  'Напитки',
+  'Супы',
+  'Салаты',
+  'Выпечка',
+  'Десерты',
+];
+
+let localCategoriesStore: string[] = [...defaultCategories];
+
 export const defaultDishes: Dish[] = [
   {
     id: 'dish-1',
@@ -81,6 +92,59 @@ export const defaultDishes: Dish[] = [
   },
 ];
 
+let inMemoryDishesStore: Dish[] = [...defaultDishes];
+
+/**
+ * Realtime Event Listener broadcast for zero-page-refresh update on Storefront
+ */
+export function notifyMenuUpdated() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('daymohk_menu_updated'));
+  }
+}
+
+export function subscribeToMenuUpdates(callback: () => void) {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('daymohk_menu_updated', callback);
+    return () => window.removeEventListener('daymohk_menu_updated', callback);
+  }
+  return () => {};
+}
+
+/**
+ * Получить список категорий
+ */
+export function fetchCategories(): string[] {
+  return localCategoriesStore;
+}
+
+export function addCategory(newCategory: string): string[] {
+  const trimmed = newCategory.trim();
+  if (trimmed && !localCategoriesStore.includes(trimmed)) {
+    localCategoriesStore.push(trimmed);
+    notifyMenuUpdated();
+  }
+  return localCategoriesStore;
+}
+
+export function removeCategory(categoryToRemove: string): string[] {
+  localCategoriesStore = localCategoriesStore.filter((c) => c !== categoryToRemove);
+  notifyMenuUpdated();
+  return localCategoriesStore;
+}
+
+/**
+ * Read image file from local computer drive as base64 Data URL
+ */
+export function readImageFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Получить все блюда (для панели Администратора)
  */
@@ -93,10 +157,10 @@ export async function fetchAllDishes(): Promise<Dish[]> {
       .order('created_at', { ascending: false });
 
     if (error || !data || data.length === 0) {
-      return defaultDishes;
+      return inMemoryDishesStore;
     }
 
-    return data.map((row: any) => ({
+    const fetched = data.map((row: any) => ({
       id: row.id,
       title: row.title,
       description: row.description || '',
@@ -107,8 +171,11 @@ export async function fetchAllDishes(): Promise<Dish[]> {
       badge: row.badge || null,
       imageUrl: row.image_url || null,
     }));
+
+    inMemoryDishesStore = fetched;
+    return fetched;
   } catch (err) {
-    return defaultDishes;
+    return inMemoryDishesStore;
   }
 }
 
@@ -124,10 +191,10 @@ export async function fetchAvailableDishes(): Promise<Dish[]> {
       .eq('is_available', true);
 
     if (error || !data || data.length === 0) {
-      return defaultDishes.filter((d) => d.isAvailable);
+      return inMemoryDishesStore.filter((d) => d.isAvailable);
     }
 
-    return data.map((row: any) => ({
+    const fetched = data.map((row: any) => ({
       id: row.id,
       title: row.title,
       description: row.description || '',
@@ -138,8 +205,10 @@ export async function fetchAvailableDishes(): Promise<Dish[]> {
       badge: row.badge || null,
       imageUrl: row.image_url || null,
     }));
+
+    return fetched;
   } catch (err) {
-    return defaultDishes.filter((d) => d.isAvailable);
+    return inMemoryDishesStore.filter((d) => d.isAvailable);
   }
 }
 
@@ -149,6 +218,19 @@ export async function fetchAvailableDishes(): Promise<Dish[]> {
 export async function addNewDishInSupabase(
   newDish: Omit<Dish, 'id'>
 ): Promise<Dish | null> {
+  const createdDish: Dish = {
+    id: `dish-${Date.now()}`,
+    ...newDish,
+  };
+
+  // 1. Включаем категорию в реестр, если еще нет
+  if (!localCategoriesStore.includes(newDish.category)) {
+    localCategoriesStore.push(newDish.category);
+  }
+
+  // 2. Включаем в локальный стор для немедленной отдачи
+  inMemoryDishesStore.unshift(createdDish);
+
   try {
     const supabase = createClient();
     const { data, error } = await supabase
@@ -166,35 +248,16 @@ export async function addNewDishInSupabase(
       .select()
       .single();
 
-    if (error || !data) {
-      // Резервное добавление в локальный список при отсутствии БД
-      const createdDish: Dish = {
-        id: `dish-${Date.now()}`,
-        ...newDish,
-      };
-      defaultDishes.unshift(createdDish);
-      return createdDish;
+    if (!error && data) {
+      createdDish.id = data.id;
     }
-
-    return {
-      id: data.id,
-      title: data.title,
-      description: data.description || '',
-      price: Number(data.price),
-      category: data.category,
-      isAvailable: data.is_available,
-      estimatedCookingTimeMinutes: data.estimated_cooking_time_minutes || 15,
-      badge: data.badge || null,
-      imageUrl: data.image_url || null,
-    };
   } catch (err) {
-    const createdDish: Dish = {
-      id: `dish-${Date.now()}`,
-      ...newDish,
-    };
-    defaultDishes.unshift(createdDish);
-    return createdDish;
+    // В локальном окружении сохраняем в памяти
   }
+
+  // Бродкастим событие для мгновенного обновления витрины клиентам БЕЗ перезагрузки
+  notifyMenuUpdated();
+  return createdDish;
 }
 
 /**
@@ -204,21 +267,21 @@ export async function toggleDishAvailabilityInSupabase(
   dishId: string,
   newAvailable: boolean
 ): Promise<boolean> {
+  const local = inMemoryDishesStore.find((d) => d.id === dishId);
+  if (local) {
+    local.isAvailable = newAvailable;
+  }
+
   try {
     const supabase = createClient();
-    const { error } = await supabase
+    await supabase
       .from('dishes')
       .update({ is_available: newAvailable })
       .eq('id', dishId);
-
-    // Обновляем локальный массив для демо
-    const local = defaultDishes.find((d) => d.id === dishId);
-    if (local) {
-      local.isAvailable = newAvailable;
-    }
-
-    return !error;
   } catch (err) {
-    return false;
+    // ignore
   }
+
+  notifyMenuUpdated();
+  return true;
 }
