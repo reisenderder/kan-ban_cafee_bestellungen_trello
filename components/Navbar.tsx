@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { CartDrawer } from './CartDrawer';
 
 export function Navbar() {
-  const { items, setIsCartOpen, totalAmount } = useCart();
+  const { items, isCartOpen, setIsCartOpen, totalAmount } = useCart();
   const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
@@ -139,8 +139,8 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Floating Bottom Quick-Cart Bar for mobile/desktop when scrolling */}
-      {totalItemsCount > 0 && (
+      {/* Floating Bottom Quick-Cart Bar for mobile/desktop when scrolling - Hidden when Cart is open */}
+      {totalItemsCount > 0 && !isCartOpen && (
         <div
           className="animate-fade-in"
           style={{

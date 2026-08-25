@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { OtpVerificationModal } from './OtpVerificationModal';
+import { ClientOrderChatModal } from './ClientOrderChatModal';
 
 export function CartDrawer() {
   const {
@@ -19,6 +20,7 @@ export function CartDrawer() {
 
   const [step, setStep] = useState<'ITEMS' | 'DELIVERY'>('ITEMS');
   const [isOtpOpen, setIsOtpOpen] = useState(false);
+  const [isClientChatOpen, setIsClientChatOpen] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
   if (!isCartOpen) return null;
@@ -28,18 +30,33 @@ export function CartDrawer() {
     setDeliveryDetails((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleChannelSelect = (channel: 'TELEGRAM' | 'EMAIL') => {
+    setDeliveryDetails((prev) => ({
+      ...prev,
+      verificationChannel: channel,
+      verificationTarget: channel === 'TELEGRAM' ? prev.verificationTarget || '' : prev.verificationTarget || '',
+    }));
+  };
+
   const handleStartVerification = (e: React.FormEvent) => {
     e.preventDefault();
     if (!deliveryDetails.contactName || !deliveryDetails.address || !deliveryDetails.contactPhone) {
       alert('Пожалуйста, заполните имя, телефон и адрес доставки.');
       return;
     }
+
+    if (!deliveryDetails.verificationTarget || !deliveryDetails.verificationTarget.trim()) {
+      const channelName = deliveryDetails.verificationChannel === 'TELEGRAM' ? 'Telegram username / телефон' : 'Email';
+      alert(`Пожалуйста, введите ваш ${channelName} для получения 6-значного OTP-кода!`);
+      return;
+    }
+
     setIsOtpOpen(true);
   };
 
   const handleOtpVerified = () => {
     setIsOtpOpen(false);
-    setSubmitMessage('Канал верифицирован! Заказ передан менеджеру кафе DAYMOHKCOFEE.');
+    setSubmitMessage('Канал успешного верифицирован! 6-значный OTP код подтверждён. Заказ передан менеджеру DAYMOHKCOFEE.');
     clearCart();
   };
 
@@ -85,20 +102,43 @@ export function CartDrawer() {
             }}
           >
             <h2 style={{ fontSize: '1.4rem' }}>
-              {step === 'ITEMS' ? 'Корзина заказа' : 'Оформление и верификация'}
+              {step === 'ITEMS' ? 'Корзина заказа' : 'Оформление и OTP-авторизация'}
             </h2>
-            <button
-              onClick={() => setIsCartOpen(false)}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                color: 'var(--color-text-secondary)',
-              }}
-            >
-              &times;
-            </button>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              {items.length > 0 && step === 'ITEMS' && (
+                <button
+                  onClick={() => {
+                    if (confirm('Вы действительно хотите очистить всю корзину?')) {
+                      clearCart();
+                    }
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--color-error)',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                  title="Очистить все позиции из корзины"
+                >
+                  🗑️ Очистить
+                </button>
+              )}
+              <button
+                onClick={() => setIsCartOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.5rem',
+                  cursor: 'pointer',
+                  color: 'var(--color-text-secondary)',
+                }}
+              >
+                &times;
+              </button>
+            </div>
           </div>
 
           {/* Drawer Content */}
@@ -121,27 +161,38 @@ export function CartDrawer() {
                 >
                   ✓
                 </div>
-                <h3 style={{ marginBottom: '12px' }}>Заказ подтверждён!</h3>
+                <h3 style={{ marginBottom: '12px' }}>Заказ успешно верифицирован!</h3>
                 <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', marginBottom: '24px' }}>
                   {submitMessage}
                 </p>
-                <button
-                  className="btn-primary"
-                  onClick={() => {
-                    setSubmitMessage(null);
-                    setIsCartOpen(false);
-                    setStep('ITEMS');
-                  }}
-                >
-                  Завершить
-                </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    className="btn-primary"
+                    style={{ padding: '14px', backgroundColor: 'var(--color-deep-forest)' }}
+                    onClick={() => setIsClientChatOpen(true)}
+                  >
+                    💬 Написать менеджеру по заказу
+                  </button>
+
+                  <button
+                    className="btn-secondary"
+                    onClick={() => {
+                      setSubmitMessage(null);
+                      setIsCartOpen(false);
+                      setStep('ITEMS');
+                    }}
+                  >
+                    Закрыть
+                  </button>
+                </div>
               </div>
             ) : step === 'ITEMS' ? (
               <>
                 {items.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-muted)' }}>
                     <p style={{ fontSize: '1.1rem', marginBottom: '16px' }}>Корзина пока пуста</p>
-                    <p style={{ fontSize: '0.9rem' }}>Добавьте блюда из витрины</p>
+                    <p style={{ fontSize: '0.9rem' }}>Добавьте блюда из меню</p>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -221,11 +272,11 @@ export function CartDrawer() {
                 )}
               </>
             ) : (
-              /* DELIVERY STEP FORM */
+              /* DELIVERY STEP FORM WITH OTP CHANNEL SELECTOR */
               <form onSubmit={handleStartVerification} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                    Имя *
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>
+                    Имя получателя *
                   </label>
                   <input
                     type="text"
@@ -233,7 +284,7 @@ export function CartDrawer() {
                     value={deliveryDetails.contactName}
                     onChange={handleDeliveryChange}
                     required
-                    placeholder="Ваше имя"
+                    placeholder="Ахмед / Фатима"
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -245,8 +296,8 @@ export function CartDrawer() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                    Телефон доставки *
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>
+                    Телефон доставки в Каире *
                   </label>
                   <input
                     type="tel"
@@ -266,8 +317,8 @@ export function CartDrawer() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                    Адрес в Каире *
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '0.9rem', marginBottom: '6px' }}>
+                    Адрес доставки (Район, улица) *
                   </label>
                   <textarea
                     name="address"
@@ -275,7 +326,7 @@ export function CartDrawer() {
                     onChange={handleDeliveryChange}
                     required
                     rows={2}
-                    placeholder="Район, улица, дом, квартира"
+                    placeholder="Каир, район Наср-Сити, улица 15, дом 4"
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -286,46 +337,115 @@ export function CartDrawer() {
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                    Ориентир (Landmark)
+                {/* OTP CHANNEL SELECTION BOX */}
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '16px',
+                    border: '1px solid var(--color-border)',
+                    marginTop: '8px',
+                  }}
+                >
+                  <label style={{ display: 'block', fontWeight: 800, fontSize: '0.95rem', marginBottom: '10px', color: 'var(--color-deep-forest)' }}>
+                    🔒 Канал получения 6-значного OTP-кода *
                   </label>
-                  <input
-                    type="text"
-                    name="landmark"
-                    value={deliveryDetails.landmark}
-                    onChange={handleDeliveryChange}
-                    placeholder="Рядом с мечетью / супермаркетом"
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
-                  />
-                </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px', marginBottom: '14px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleChannelSelect('TELEGRAM')}
+                      style={{
+                        flex: 1,
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: deliveryDetails.verificationChannel === 'TELEGRAM' ? '2px solid var(--color-deep-forest)' : '1px solid var(--color-border)',
+                        backgroundColor: deliveryDetails.verificationChannel === 'TELEGRAM' ? 'rgba(30, 58, 43, 0.1)' : 'var(--color-surface)',
+                        color: 'var(--color-deep-forest)',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      ✈️ В Telegram
+                    </button>
 
-                <div>
-                  <label style={{ display: 'block', fontWeight: 600, fontSize: '0.9rem', marginBottom: '6px' }}>
-                    Канал верификации (OTP) *
-                  </label>
-                  <select
-                    name="verificationChannel"
-                    value={deliveryDetails.verificationChannel}
-                    onChange={handleDeliveryChange}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-sm)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
-                  >
-                    <option value="TELEGRAM">Telegram Bot (Код 6 цифр)</option>
-                    <option value="EMAIL">Email (Код 6 цифр)</option>
-                    <option value="PHONE">Телефонный звонок</option>
-                  </select>
+                    <button
+                      type="button"
+                      onClick={() => handleChannelSelect('EMAIL')}
+                      style={{
+                        flex: 1,
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: deliveryDetails.verificationChannel === 'EMAIL' ? '2px solid var(--color-deep-forest)' : '1px solid var(--color-border)',
+                        backgroundColor: deliveryDetails.verificationChannel === 'EMAIL' ? 'rgba(30, 58, 43, 0.1)' : 'var(--color-surface)',
+                        color: 'var(--color-deep-forest)',
+                        fontWeight: 700,
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      📧 На Email
+                    </button>
+                  </div>
+
+                  {deliveryDetails.verificationChannel === 'TELEGRAM' ? (
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                        Укажите ваш @username в Telegram или номер телефона *
+                      </label>
+                      <input
+                        type="text"
+                        name="verificationTarget"
+                        value={deliveryDetails.verificationTarget}
+                        onChange={handleDeliveryChange}
+                        required
+                        placeholder="@username или +20123456789"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--color-border)',
+                          fontSize: '0.9rem',
+                        }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
+                        Сюда прийдет 6-значный одноразовый OTP-код для подтверждения заказа.
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 600, fontSize: '0.85rem', marginBottom: '4px' }}>
+                        Укажите ваш Email адрес *
+                      </label>
+                      <input
+                        type="email"
+                        name="verificationTarget"
+                        value={deliveryDetails.verificationTarget}
+                        onChange={handleDeliveryChange}
+                        required
+                        placeholder="yourname@example.com"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--color-border)',
+                          fontSize: '0.9rem',
+                        }}
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
+                        Сюда прийдет 6-значный одноразовый OTP-код для подтверждения заказа.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div
@@ -337,7 +457,7 @@ export function CartDrawer() {
                     color: 'var(--color-text-secondary)',
                   }}
                 >
-                  💵 <strong>Оплата:</strong> Наличными курьеру при получении (EGP).
+                  💵 <strong>Способ оплаты:</strong> Наличными курьеру при получении (EGP).
                 </div>
               </form>
             )}
@@ -367,13 +487,34 @@ export function CartDrawer() {
               </div>
 
               {step === 'ITEMS' ? (
-                <button
-                  className="btn-primary"
-                  style={{ width: '100%', padding: '14px' }}
-                  onClick={() => setStep('DELIVERY')}
-                >
-                  Перейти к оформлению
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    style={{
+                      padding: '14px',
+                      color: 'var(--color-error)',
+                      borderColor: 'rgba(198, 40, 40, 0.3)',
+                      fontWeight: 700,
+                    }}
+                    onClick={() => {
+                      if (confirm('Вы действительно хотите очистить всю корзину?')) {
+                        clearCart();
+                      }
+                    }}
+                    title="Очистить все позиции из корзины"
+                  >
+                    🗑️ Очистить
+                  </button>
+
+                  <button
+                    className="btn-primary"
+                    style={{ flex: 1, padding: '14px' }}
+                    onClick={() => setStep('DELIVERY')}
+                  >
+                    Перейти к оформлению
+                  </button>
+                </div>
               ) : (
                 <div style={{ display: 'flex', gap: '12px' }}>
                   <button
@@ -387,10 +528,10 @@ export function CartDrawer() {
                   <button
                     type="button"
                     className="btn-primary"
-                    style={{ flex: 2, padding: '14px' }}
+                    style={{ flex: 2, padding: '14px', backgroundColor: 'var(--color-warm-terracotta)' }}
                     onClick={handleStartVerification}
                   >
-                    Получить OTP-код
+                    Получить OTP-код 🔒
                   </button>
                 </div>
               )}
@@ -402,9 +543,15 @@ export function CartDrawer() {
       <OtpVerificationModal
         isOpen={isOtpOpen}
         channel={deliveryDetails.verificationChannel}
-        target={deliveryDetails.contactPhone || deliveryDetails.contactName}
+        target={deliveryDetails.verificationTarget || deliveryDetails.contactPhone}
         onVerifySuccess={handleOtpVerified}
         onCancel={() => setIsOtpOpen(false)}
+      />
+
+      <ClientOrderChatModal
+        isOpen={isClientChatOpen}
+        orderNumber="ORD-2026-101"
+        onClose={() => setIsClientChatOpen(false)}
       />
     </>
   );

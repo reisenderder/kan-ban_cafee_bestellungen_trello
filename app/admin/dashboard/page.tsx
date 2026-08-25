@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Dish, fetchAllDishes, addNewDishInSupabase, toggleDishAvailabilityInSupabase } from '../../../lib/menu/dishes';
 
 interface EmployeeItem {
   id: string;
@@ -8,14 +9,6 @@ interface EmployeeItem {
   role: 'ADMIN' | 'MANAGER' | 'COURIER' | 'RESOLUTION_OFFICER';
   status: 'ACTIVE' | 'DISABLED' | 'ARCHIVED';
   isLastAdmin?: boolean;
-}
-
-interface MenuItemData {
-  id: string;
-  title: string;
-  category: string;
-  price: number;
-  isAvailable: boolean;
 }
 
 interface ComplaintItem {
@@ -33,15 +26,6 @@ const initialEmployees: EmployeeItem[] = [
   { id: 'emp-2', name: 'Менеджер Каира', role: 'MANAGER', status: 'ACTIVE' },
   { id: 'emp-3', name: 'Курьер 1', role: 'COURIER', status: 'ACTIVE' },
   { id: 'emp-4', name: 'Офицер Урегулирования', role: 'RESOLUTION_OFFICER', status: 'ACTIVE' },
-];
-
-const initialMenuItems: MenuItemData[] = [
-  { id: 'm-1', title: 'Блюдо 1', category: 'Категория 1', price: 150, isAvailable: true },
-  { id: 'm-2', title: 'Блюдо 2', category: 'Категория 1', price: 200, isAvailable: true },
-  { id: 'm-3', title: 'Блюдо 3', category: 'Категория 2', price: 180, isAvailable: true },
-  { id: 'm-4', title: 'Блюдо 4', category: 'Категория 2', price: 250, isAvailable: false },
-  { id: 'm-5', title: 'Блюдо 5', category: 'Категория 3', price: 120, isAvailable: true },
-  { id: 'm-6', title: 'Блюдо 6', category: 'Категория 4', price: 300, isAvailable: true },
 ];
 
 const initialComplaints: ComplaintItem[] = [
@@ -66,11 +50,30 @@ const initialComplaints: ComplaintItem[] = [
 ];
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'COMPLAINTS'>('EMPLOYEES');
+  const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'COMPLAINTS'>('MENU');
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
-  const [menuItems, setMenuItems] = useState<MenuItemData[]>(initialMenuItems);
+  const [dishes, setDishes] = useState<Dish[]>([]);
   const [complaints, setComplaints] = useState<ComplaintItem[]>(initialComplaints);
   const [notification, setNotification] = useState<string | null>(null);
+
+  // New Dish Modal State
+  const [isAddDishModalOpen, setIsAddDishModalOpen] = useState<boolean>(false);
+  const [newTitle, setNewTitle] = useState<string>('');
+  const [newCategory, setNewCategory] = useState<string>('Горячие блюда');
+  const [newPrice, setNewPrice] = useState<string>('150');
+  const [newDescription, setNewDescription] = useState<string>('');
+  const [newImageUrl, setNewImageUrl] = useState<string>('');
+  const [newTimeMinutes, setNewTimeMinutes] = useState<string>('15');
+  const [newBadge, setNewBadge] = useState<string>('');
+  const [isSubmittingDish, setIsSubmittingDish] = useState<boolean>(false);
+
+  useEffect(() => {
+    async function loadDishes() {
+      const data = await fetchAllDishes();
+      setDishes(data);
+    }
+    loadDishes();
+  }, []);
 
   // Employee Lifecycle: ACTIVE -> DISABLED -> ARCHIVED (No hard delete)
   const handleEmployeeStatusChange = (id: string, newStatus: EmployeeItem['status']) => {
@@ -86,18 +89,45 @@ export default function AdminDashboardPage() {
     setNotification(`Статус сотрудника "${emp?.name}" изменён на ${newStatus}.`);
   };
 
-  // Toggle Menu Availability
-  const handleToggleMenuAvailability = (id: string) => {
-    setMenuItems((prev) =>
-      prev.map((m) => {
-        if (m.id === id) {
-          const updated = !m.isAvailable;
-          setNotification(`Доступность слота "${m.title}" изменена: ${updated ? 'Доступен' : 'Отключён'}`);
-          return { ...m, isAvailable: updated };
-        }
-        return m;
-      })
+  // Toggle Dish Availability
+  const handleToggleDish = async (id: string, currentAvailable: boolean) => {
+    const nextAvailable = !currentAvailable;
+    const success = await toggleDishAvailabilityInSupabase(id, nextAvailable);
+
+    setDishes((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, isAvailable: nextAvailable } : d))
     );
+    setNotification(`Доступность блюда изменена (${nextAvailable ? 'Включено' : 'Отключено в стоп-лист'}).`);
+  };
+
+  // Create New Dish Slot
+  const handleCreateNewDish = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newPrice.trim()) return;
+
+    setIsSubmittingDish(true);
+    const created = await addNewDishInSupabase({
+      title: newTitle.trim(),
+      description: newDescription.trim() || 'Свежее аппетитное блюдо от шеф-повара DAYMOHKCOFEE.',
+      price: parseFloat(newPrice) || 100,
+      category: newCategory.trim() || 'Горячие блюда',
+      isAvailable: true,
+      estimatedCookingTimeMinutes: parseInt(newTimeMinutes) || 15,
+      badge: newBadge.trim() || null,
+      imageUrl: newImageUrl.trim() || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
+    });
+
+    if (created) {
+      setDishes((prev) => [created, ...prev]);
+      setNotification(`✓ Новое блюдо "${created.title}" успешно опубликовано!`);
+      // Reset Form
+      setNewTitle('');
+      setNewDescription('');
+      setNewImageUrl('');
+      setNewBadge('');
+      setIsAddDishModalOpen(false);
+    }
+    setIsSubmittingDish(false);
   };
 
   // Resolve Complaint
@@ -111,10 +141,10 @@ export default function AdminDashboardPage() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <span className="badge badge-forest" style={{ marginBottom: '4px' }}>Панель Администратора</span>
-          <h1 style={{ fontSize: '2rem', margin: 0 }}>Администрирование DAYMOHKCOFEE</h1>
+          <h1 style={{ fontSize: '2rem', margin: 0, fontWeight: 800 }}>Администрирование DAYMOHKCOFEE</h1>
         </div>
 
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -144,7 +174,7 @@ export default function AdminDashboardPage() {
               cursor: 'pointer',
             }}
           >
-            🍽️ Меню и Слоты ({menuItems.length})
+            🍽️ Меню и Слоты ({dishes.length})
           </button>
           <button
             onClick={() => setActiveTab('COMPLAINTS')}
@@ -176,6 +206,7 @@ export default function AdminDashboardPage() {
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            fontWeight: 600,
           }}
         >
           <span>✓ {notification}</span>
@@ -289,69 +320,339 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* TAB 2: MENU & SLOTS */}
+      {/* TAB 2: MENU & SLOTS CREATION */}
       {activeTab === 'MENU' && (
-        <div style={{ display: 'grid', gap: '16px' }}>
+        <div style={{ display: 'grid', gap: '20px' }}>
           <div
             style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
               backgroundColor: 'var(--color-surface-subtle)',
-              padding: '12px 16px',
-              borderRadius: 'var(--radius-sm)',
-              fontSize: '0.85rem',
-              color: 'var(--color-text-secondary)',
+              padding: '16px 20px',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border)',
             }}
           >
-            🍽️ Администратор управляет составом витринных мест и кнопками временного отключения позиций.
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Управление слотами меню</h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                Публикуйте новые блюда, указывайте ингредиенты, фото и управляйте видимостью для Витрины.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsAddDishModalOpen(true)}
+              className="btn-primary"
+              style={{
+                backgroundColor: 'var(--color-warm-terracotta)',
+                padding: '10px 20px',
+                fontWeight: 700,
+                fontSize: '0.95rem',
+              }}
+            >
+              + Добавить новое блюдо
+            </button>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: '16px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '20px',
             }}
           >
-            {menuItems.map((item) => (
+            {dishes.map((dish) => (
               <div
-                key={item.id}
+                key={dish.id}
                 style={{
                   backgroundColor: 'var(--color-surface)',
                   borderRadius: 'var(--radius-md)',
-                  padding: '16px',
                   border: '1px solid var(--color-border)',
+                  overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  opacity: item.isAvailable ? 1 : 0.65,
+                  boxShadow: 'var(--shadow-sm)',
+                  opacity: dish.isAvailable ? 1 : 0.65,
                 }}
               >
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontWeight: 700, fontSize: '1.1rem' }}>{item.title}</span>
-                    <span className="badge badge-forest">{item.category}</span>
-                  </div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: 'var(--color-deep-forest)', marginBottom: '12px' }}>
-                    {item.price} EGP
-                  </div>
+                {/* Image Preview */}
+                <div style={{ position: 'relative', height: '150px', backgroundColor: '#E2E8F0' }}>
+                  <img
+                    src={dish.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'}
+                    alt={dish.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {dish.badge && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '10px',
+                        backgroundColor: 'var(--color-marigold-zest)',
+                        color: 'var(--color-deep-forest)',
+                        padding: '3px 10px',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: '0.75rem',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {dish.badge}
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      bottom: '10px',
+                      right: '10px',
+                      backgroundColor: 'rgba(0,0,0,0.75)',
+                      color: '#FFF',
+                      padding: '2px 8px',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    ⏱️ {dish.estimatedCookingTimeMinutes || 15} мин
+                  </span>
                 </div>
 
-                <button
-                  onClick={() => handleToggleMenuAvailability(item.id)}
-                  style={{
-                    padding: '8px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: 'none',
-                    backgroundColor: item.isAvailable ? 'rgba(198, 40, 40, 0.1)' : 'rgba(46, 125, 50, 0.15)',
-                    color: item.isAvailable ? 'var(--color-error)' : 'var(--color-success)',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  {item.isAvailable ? 'Отключить заказ' : 'Включить заказ'}
-                </button>
+                {/* Content */}
+                <div style={{ padding: '16px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>{dish.title}</span>
+                      <span className="badge badge-forest" style={{ fontSize: '0.75rem' }}>{dish.category}</span>
+                    </div>
+
+                    <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '12px', lineHeight: 1.4 }}>
+                      {dish.description}
+                    </p>
+
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-deep-forest)', marginBottom: '14px' }}>
+                      {dish.price} EGP
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleToggleDish(dish.id, dish.isAvailable)}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: 'none',
+                      backgroundColor: dish.isAvailable ? 'rgba(198, 40, 40, 0.1)' : 'rgba(46, 125, 50, 0.15)',
+                      color: dish.isAvailable ? 'var(--color-error)' : 'var(--color-success)',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                    }}
+                  >
+                    {dish.isAvailable ? '⛔ Скрыть (В стоп-лист)' : '✓ Показать на витрине'}
+                  </button>
+                </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* CREATE NEW DISH MODAL FORM */}
+      {isAddDishModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            className="animate-fade-in"
+            style={{
+              width: '100%',
+              maxWidth: '520px',
+              backgroundColor: 'var(--color-surface)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '32px',
+              boxShadow: 'var(--shadow-lg)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>➕ Публикация нового блюда</h2>
+              <button
+                onClick={() => setIsAddDishModalOpen(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewDish} style={{ display: 'grid', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                  Название блюда *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Например: Люля-кебаб из говядины"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.95rem',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Категория
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Горячие блюда"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Цена (EGP) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="150"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                  Подробный состав и описание ингредиентов
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Опишите состав блюда, специи, вес порции и особенности приготовления..."
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.9rem',
+                    fontFamily: 'inherit',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                  Ссылка на фото блюда (Image URL)
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={newImageUrl}
+                  onChange={(e) => setNewImageUrl(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border)',
+                    fontSize: '0.9rem',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Время готовки (мин)
+                  </label>
+                  <input
+                    type="number"
+                    value={newTimeMinutes}
+                    onChange={(e) => setNewTimeMinutes(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
+                    Бейдж (необязательно)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Шеф-выбор, Хит..."
+                    value={newBadge}
+                    onChange={(e) => setNewBadge(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      fontSize: '0.95rem',
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsAddDishModalOpen(false)}
+                  className="btn-secondary"
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingDish}
+                  className="btn-primary"
+                  style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-warm-terracotta)' }}
+                >
+                  {isSubmittingDish ? 'Сохранение...' : 'Опубликовать блюдо'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
