@@ -58,6 +58,28 @@ const initialComplaints: ComplaintItem[] = [
   },
 ];
 
+const dishFormLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  marginBottom: '6px',
+};
+
+const dishFormInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--color-border)',
+  fontSize: '0.95rem',
+};
+
+const dishFormFieldPairStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '12px',
+  alignItems: 'end',
+};
+
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'CATEGORIES' | 'COMPLAINTS'>('MENU');
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
@@ -657,41 +679,24 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleCreateNewDish} style={{ display: 'grid', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                  Название блюда *
-                </label>
+                <label style={dishFormLabelStyle}>Название блюда *</label>
                 <input
                   type="text"
                   required
                   placeholder="Например: Люля-кебаб из говядины"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.95rem',
-                  }}
+                  style={dishFormInputStyle}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={dishFormFieldPairStyle}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Категория (Выпадающий список) *
-                  </label>
+                  <label style={dishFormLabelStyle}>Категория *</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                      backgroundColor: 'var(--color-surface)',
-                    }}
+                    style={{ ...dishFormInputStyle, backgroundColor: 'var(--color-surface)' }}
                   >
                     {categories.map((c) => (
                       <option key={c} value={c}>
@@ -703,9 +708,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Цена (EGP) *
-                  </label>
+                  <label style={dishFormLabelStyle}>Цена (EGP) *</label>
                   <input
                     type="number"
                     required
@@ -713,56 +716,33 @@ export default function AdminDashboardPage() {
                     placeholder="150"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               </div>
 
               {newCategory === 'NEW_CUSTOM' && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Название новой категории *
-                  </label>
+                  <label style={dishFormLabelStyle}>Название новой категории *</label>
                   <input
                     type="text"
                     required
                     placeholder="Введите название новой категории"
                     value={customCategoryInput}
                     onChange={(e) => setCustomCategoryInput(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                  Подробный состав и описание ингредиентов
-                </label>
+                <label style={dishFormLabelStyle}>Подробный состав и описание ингредиентов</label>
                 <textarea
                   rows={3}
                   placeholder="Опишите состав блюда, специи, вес порции и особенности приготовления..."
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.9rem',
-                    fontFamily: 'inherit',
-                  }}
+                  style={{ ...dishFormInputStyle, fontSize: '0.9rem', fontFamily: 'inherit' }}
                 />
               </div>
 
@@ -776,7 +756,7 @@ export default function AdminDashboardPage() {
                   backgroundColor: 'var(--color-surface-subtle)',
                 }}
               >
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, marginBottom: '8px', cursor: 'pointer' }}>
+                <label style={{ ...dishFormLabelStyle, cursor: 'pointer' }}>
                   📁 Загрузить фото с компьютера (Локальный носитель)
                 </label>
                 <input
@@ -797,13 +777,7 @@ export default function AdminDashboardPage() {
                     setNewImageUrl(e.target.value);
                     setPreviewImage(e.target.value);
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.85rem',
-                  }}
+                  style={dishFormInputStyle}
                 />
 
                 {previewImage && (
@@ -820,40 +794,24 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={dishFormFieldPairStyle}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Время готовки (мин)
-                  </label>
+                  <label style={dishFormLabelStyle}>Время готовки (мин)</label>
                   <input
                     type="number"
                     value={newTimeMinutes}
                     onChange={(e) => setNewTimeMinutes(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Бейдж (необязательно)
-                  </label>
+                  <label style={dishFormLabelStyle}>Бейдж (необязательно)</label>
                   <input
                     type="text"
                     placeholder="Шеф-выбор, Хит..."
                     value={newBadge}
                     onChange={(e) => setNewBadge(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               </div>
