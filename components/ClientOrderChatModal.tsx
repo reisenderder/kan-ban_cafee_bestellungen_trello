@@ -1,65 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
-
-interface ChatMessage {
-  id: string;
-  sender: 'CLIENT' | 'MANAGER';
-  text: string;
-  timestamp: string;
-}
+import React, { useState, useEffect } from 'react';
+import { ChatMessage, fetchChatMessages, sendChatMessage, subscribeToChatRealtime } from '../lib/orders/chat';
 
 interface ClientOrderChatModalProps {
   isOpen: boolean;
+  orderId: string;
   orderNumber: string;
   onClose: () => void;
 }
 
-const initialDemoMessages: ChatMessage[] = [
-  {
-    id: 'msg-1',
-    sender: 'MANAGER',
-    text: 'Здравствуйте! Заказ получен кафе DAYMOHKCOFEE и передается на кухню. Если у вас есть пожелания к заказу, напишите нам сюда.',
-    timestamp: '11:30',
-  },
-];
-
 export function ClientOrderChatModal({
   isOpen,
+  orderId,
   orderNumber,
   onClose,
 }: ClientOrderChatModalProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(initialDemoMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+
+  useEffect(() => {
+    if (!isOpen || !orderId) return;
+
+    let cancelled = false;
+    fetchChatMessages(orderId).then((msgs) => {
+      if (!cancelled) setMessages(msgs);
+    });
+
+    const unsubscribe = subscribeToChatRealtime(orderId, () => {
+      fetchChatMessages(orderId).then((msgs) => {
+        if (!cancelled) setMessages(msgs);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [isOpen, orderId]);
 
   if (!isOpen) return null;
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !orderId) return;
 
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'CLIENT',
-      text: inputText.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, newMsg]);
+    const text = inputText.trim();
     setInputText('');
 
-    // Simulate auto manager reply after 2.5 seconds for demo
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `msg-reply-${Date.now()}`,
-          sender: 'MANAGER',
-          text: 'Спасибо за сообщение! Менеджер ознакомился с вашим комментарием к заказу.',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    }, 2500);
+    const newMsg = await sendChatMessage(orderId, 'CLIENT', text);
+    setMessages((prev) => [...prev, newMsg]);
   };
 
   return (
@@ -104,7 +94,7 @@ export function ClientOrderChatModal({
         >
           <div>
             <span style={{ fontSize: '0.8rem', opacity: 0.85, display: 'block' }}>Чат с менеджером</span>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Заказ #{orderNumber || 'ORD-2026-101'}</h3>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Заказ #{orderNumber}</h3>
           </div>
           <button
             onClick={onClose}
@@ -132,38 +122,44 @@ export function ClientOrderChatModal({
             backgroundColor: 'var(--color-bg)',
           }}
         >
-          {messages.map((msg) => {
-            const isClient = msg.sender === 'CLIENT';
-            return (
-              <div
-                key={msg.id}
-                style={{
-                  alignSelf: isClient ? 'flex-end' : 'flex-start',
-                  maxWidth: '82%',
-                  backgroundColor: isClient ? 'var(--color-deep-forest)' : 'var(--color-surface)',
-                  color: isClient ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
-                  padding: '10px 14px',
-                  borderRadius: '16px',
-                  borderBottomRightRadius: isClient ? '4px' : '16px',
-                  borderBottomLeftRadius: isClient ? '16px' : '4px',
-                  border: isClient ? 'none' : '1px solid var(--color-border)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              >
-                <div style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{msg.text}</div>
+          {messages.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
+              Сообщений пока нет. Напишите менеджеру, если есть вопросы по заказу.
+            </div>
+          ) : (
+            messages.map((msg) => {
+              const isClient = msg.sender === 'CLIENT';
+              return (
                 <div
+                  key={msg.id}
                   style={{
-                    fontSize: '0.7rem',
-                    opacity: 0.7,
-                    marginTop: '4px',
-                    textAlign: 'right',
+                    alignSelf: isClient ? 'flex-end' : 'flex-start',
+                    maxWidth: '82%',
+                    backgroundColor: isClient ? 'var(--color-deep-forest)' : 'var(--color-surface)',
+                    color: isClient ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
+                    padding: '10px 14px',
+                    borderRadius: '16px',
+                    borderBottomRightRadius: isClient ? '4px' : '16px',
+                    borderBottomLeftRadius: isClient ? '16px' : '4px',
+                    border: isClient ? 'none' : '1px solid var(--color-border)',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                 >
-                  {msg.timestamp}
+                  <div style={{ fontSize: '0.9rem', lineHeight: 1.4 }}>{msg.text}</div>
+                  <div
+                    style={{
+                      fontSize: '0.7rem',
+                      opacity: 0.7,
+                      marginTop: '4px',
+                      textAlign: 'right',
+                    }}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
 
         {/* Input Footer */}

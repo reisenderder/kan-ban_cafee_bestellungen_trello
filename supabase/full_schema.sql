@@ -45,3 +45,13 @@ CREATE TABLE IF NOT EXISTS public.orders (
   delay_reason TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- 5. Таблица переписки клиента и менеджера по заказу (Order Chat Messages)
+CREATE TABLE IF NOT EXISTS public.order_chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL CHECK (sender IN ('CLIENT', 'MANAGER')),
+  text TEXT NOT NULL,
+  is_read_by_manager BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

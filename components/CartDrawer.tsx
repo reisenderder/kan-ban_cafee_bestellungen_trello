@@ -573,6 +573,7 @@ export function CartDrawer() {
 
       <ClientOrderChatModal
         isOpen={isClientChatOpen}
+        orderId={createdOrder?.id || ''}
         orderNumber={createdOrder?.orderNumber || ''}
         onClose={() => setIsClientChatOpen(false)}
       />
