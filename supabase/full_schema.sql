@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   address TEXT NOT NULL,
   status public.order_status NOT NULL DEFAULT 'NEW',
   total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
   cooking_started_at TIMESTAMPTZ,
   cooking_completed_at TIMESTAMPTZ,
   target_cooking_time_minutes INT DEFAULT 15,

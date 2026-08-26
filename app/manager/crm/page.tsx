@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Order,
+  OrderStatus,
+  fetchAllOrders,
+  updateOrderStatusInSupabase,
+  subscribeToOrdersRealtime,
+} from '../../../lib/orders/orders';
 
 export interface CrmOrder {
   id: string;
@@ -8,7 +15,7 @@ export interface CrmOrder {
   customerName: string;
   customerPhoneMasked: string;
   address: string;
-  status: 'NEW' | 'ACCEPTED' | 'COOKING' | 'READY_FOR_DELIVERY' | 'DELIVERING' | 'COMPLETED' | 'PROBLEM';
+  status: OrderStatus;
   itemsSummary: string;
   totalAmount: number;
   createdAt: string;
@@ -17,70 +24,46 @@ export interface CrmOrder {
   unreadMessagesCount?: number;
 }
 
-const initialOrders: CrmOrder[] = [
-  {
-    id: 'ord-101',
-    orderNumber: '20260824-0001',
-    customerName: 'Мухаммад А.',
-    customerPhoneMasked: '+20 12* *** *890',
-    address: 'Каир, р-н Наср Сити, ул. Аль-Аббасия 14',
-    status: 'NEW',
-    itemsSummary: 'Люля-кебаб x2, Лимонад x1',
-    totalAmount: 480,
-    createdAt: '10:15',
-    items: [
-      { name: 'Люля-кебаб', quantity: 2 },
-      { name: 'Лимонад', quantity: 1 },
-    ],
-    unreadMessagesCount: 2,
-    chatMessages: [
-      { sender: 'CLIENT', text: 'Здравствуйте! Уточните, соус острый?', time: '10:16' },
-      { sender: 'CLIENT', text: 'И можно положить больше салфеток?', time: '10:17' },
-      { sender: 'MANAGER', text: 'Добрый день! Нет, соус традиционный нежный. Салфетки добавим!', time: '10:18' },
-    ],
-  },
-  {
-    id: 'ord-102',
-    orderNumber: '20260824-0002',
-    customerName: 'Фатима К.',
-    customerPhoneMasked: '+20 10* *** *456',
-    address: 'Каир, р-н Нового Каира, Проспект 90',
-    status: 'ACCEPTED',
-    itemsSummary: 'Шашлык x1, Суп дня x2',
-    totalAmount: 700,
-    createdAt: '10:05',
-    unreadMessagesCount: 0,
-    items: [
-      { name: 'Шашлык из курицы', quantity: 1 },
-      { name: 'Суп дня', quantity: 2 },
-    ],
-  },
-  {
-    id: 'ord-103',
-    orderNumber: '20260824-0003',
-    customerName: 'Ахмад Т.',
-    customerPhoneMasked: '+20 11* *** *321',
-    address: 'Каир, р-н Маади, ул. 105',
-    status: 'COOKING',
-    itemsSummary: 'Хачапури x1, Лимонад x3',
-    totalAmount: 840,
-    createdAt: '09:45',
-    unreadMessagesCount: 1,
-    items: [
-      { name: 'Хачапури по-аджарски', quantity: 1 },
-      { name: 'Лимонад', quantity: 3 },
-    ],
-    chatMessages: [
-      { sender: 'CLIENT', text: 'Сколько примерно осталось времени готовки?', time: '09:50' },
-    ],
-  },
-];
+// Маскирует телефон клиента для отображения в CRM (полный номер не должен быть виден без необходимости)
+function maskPhone(phone: string): string {
+  if (!phone || phone.length < 6) return phone;
+  return `${phone.slice(0, 6)}****${phone.slice(-2)}`;
+}
+
+function mapOrderToCrmOrder(order: Order): CrmOrder {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    customerName: order.customerName,
+    customerPhoneMasked: maskPhone(order.customerPhone),
+    address: order.address,
+    status: order.status,
+    itemsSummary: order.items.map((item) => `${item.title} x${item.quantity}`).join(', '),
+    totalAmount: order.totalAmount,
+    createdAt: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    items: order.items.map((item) => ({ name: item.title, quantity: item.quantity })),
+  };
+}
 
 export default function ManagerCrmPage() {
-  const [orders, setOrders] = useState<CrmOrder[]>(initialOrders);
+  const [orders, setOrders] = useState<CrmOrder[]>([]);
   const [selectedChatOrder, setSelectedChatOrder] = useState<CrmOrder | null>(null);
   const [newMsgText, setNewMsgText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+
+  const loadOrders = useCallback(async () => {
+    const fetched = await fetchAllOrders();
+    setOrders(fetched.map(mapOrderToCrmOrder));
+  }, []);
+
+  // Загрузка реальных заказов из Supabase и подписка на Realtime (новые заказы клиента появляются без перезагрузки)
+  useEffect(() => {
+    loadOrders();
+    const unsubscribe = subscribeToOrdersRealtime(() => {
+      loadOrders();
+    });
+    return unsubscribe;
+  }, [loadOrders]);
 
   // Status columns in Kanban
   const columns: { title: string; status: CrmOrder['status']; color: string }[] = [
@@ -88,8 +71,8 @@ export default function ManagerCrmPage() {
     { title: 'Приняты в работу', status: 'ACCEPTED', color: 'var(--color-deep-forest)' },
     { title: 'Готовятся', status: 'COOKING', color: 'var(--color-deep-forest)' },
     { title: 'Готовы к выдаче', status: 'READY_FOR_DELIVERY', color: 'var(--color-success)' },
-    { title: 'Доставляются', status: 'DELIVERING', color: 'var(--color-deep-forest)' },
-    { title: 'Завершённые', status: 'COMPLETED', color: 'var(--color-text-muted)' },
+    { title: 'Доставляются', status: 'IN_TRANSIT', color: 'var(--color-deep-forest)' },
+    { title: 'Завершённые', status: 'DELIVERED', color: 'var(--color-text-muted)' },
     { title: 'Проблема / Урегулирование', status: 'PROBLEM', color: 'var(--color-error)' },
   ];
 
@@ -105,6 +88,7 @@ export default function ManagerCrmPage() {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     );
+    updateOrderStatusInSupabase(orderId, newStatus);
   };
 
   // Copy order text for courier
