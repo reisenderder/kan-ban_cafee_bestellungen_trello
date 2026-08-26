@@ -7,6 +7,7 @@ export interface Dish {
   price: number;
   category: string;
   isAvailable: boolean;
+  isArchived?: boolean;
   estimatedCookingTimeMinutes?: number;
   badge?: string | null;
   imageUrl?: string | null;
@@ -260,6 +261,7 @@ export async function fetchAllDishes(): Promise<Dish[]> {
         price: Number(row.price),
         category: row.category,
         isAvailable: row.is_available,
+        isArchived: row.is_archived || false,
         estimatedCookingTimeMinutes: row.estimated_cooking_time_minutes || 15,
         badge: row.badge || null,
         imageUrl: row.image_url || null,
@@ -388,4 +390,54 @@ export async function toggleDishAvailabilityInSupabase(
 
   notifyMenuUpdated();
   return true;
+}
+
+/**
+ * Отредактировать уже опубликованное блюдо (название, описание, цена, категория, фото и т.д.)
+ */
+export async function updateDishInSupabase(
+  dishId: string,
+  updates: Partial<Omit<Dish, 'id'>>
+): Promise<boolean> {
+  const currentDishes = getStoredDishes();
+  const local = currentDishes.find((d) => d.id === dishId);
+  if (local) {
+    Object.assign(local, updates);
+    saveStoredDishes(currentDishes);
+  }
+
+  try {
+    const supabase = createClient();
+    const payload: Record<string, unknown> = {};
+    if (updates.title !== undefined) payload.title = updates.title;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.price !== undefined) payload.price = updates.price;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (updates.isAvailable !== undefined) payload.is_available = updates.isAvailable;
+    if (updates.isArchived !== undefined) payload.is_archived = updates.isArchived;
+    if (updates.estimatedCookingTimeMinutes !== undefined) payload.estimated_cooking_time_minutes = updates.estimatedCookingTimeMinutes;
+    if (updates.badge !== undefined) payload.badge = updates.badge;
+    if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
+
+    await supabase.from('dishes').update(payload).eq('id', dishId);
+  } catch (err) {
+    // ignore
+  }
+
+  notifyMenuUpdated();
+  return true;
+}
+
+/**
+ * Архивировать блюдо (мягкое удаление): скрывается из МЕНЮ и с витрины, история не теряется
+ */
+export async function archiveDishInSupabase(dishId: string): Promise<boolean> {
+  return updateDishInSupabase(dishId, { isArchived: true, isAvailable: false });
+}
+
+/**
+ * Восстановить блюдо из архива (доступность на витрине включается отдельно администратором)
+ */
+export async function restoreDishFromArchiveInSupabase(dishId: string): Promise<boolean> {
+  return updateDishInSupabase(dishId, { isArchived: false });
 }
