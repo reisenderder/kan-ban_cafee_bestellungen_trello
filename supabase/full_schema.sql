@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.dishes (
   price NUMERIC(10, 2) NOT NULL CHECK (price >= 0),
   category TEXT NOT NULL,
   is_available BOOLEAN NOT NULL DEFAULT true,
+  is_archived BOOLEAN NOT NULL DEFAULT false,
   estimated_cooking_time_minutes INT DEFAULT 15,
   badge TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()

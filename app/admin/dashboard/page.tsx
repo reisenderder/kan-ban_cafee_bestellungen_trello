@@ -5,6 +5,9 @@ import {
   Dish,
   fetchAllDishes,
   addNewDishInSupabase,
+  updateDishInSupabase,
+  archiveDishInSupabase,
+  restoreDishFromArchiveInSupabase,
   toggleDishAvailabilityInSupabase,
   fetchCategories,
   addCategory,
@@ -58,6 +61,28 @@ const initialComplaints: ComplaintItem[] = [
   },
 ];
 
+const dishFormLabelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.85rem',
+  fontWeight: 700,
+  marginBottom: '6px',
+};
+
+const dishFormInputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 14px',
+  borderRadius: 'var(--radius-md)',
+  border: '1px solid var(--color-border)',
+  fontSize: '0.95rem',
+};
+
+const dishFormFieldPairStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '1fr 1fr',
+  gap: '12px',
+  alignItems: 'end',
+};
+
 export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'CATEGORIES' | 'COMPLAINTS'>('MENU');
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
@@ -81,6 +106,7 @@ export default function AdminDashboardPage() {
   const [newBadge, setNewBadge] = useState<string>('');
   const [isSubmittingDish, setIsSubmittingDish] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [editingDishId, setEditingDishId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -152,7 +178,42 @@ export default function AdminDashboardPage() {
     setNotification(`Доступность блюда изменена (${nextAvailable ? 'Включено' : 'Отключено в стоп-лист'}).`);
   };
 
-  // Create New Dish Slot
+  // Reset Dish Form Fields
+  const resetDishForm = () => {
+    setNewTitle('');
+    setNewCategory('');
+    setCustomCategoryInput('');
+    setNewPrice('150');
+    setNewDescription('');
+    setNewImageUrl('');
+    setPreviewImage(null);
+    setNewTimeMinutes('15');
+    setNewBadge('');
+    setEditingDishId(null);
+  };
+
+  // Open Modal in Create mode
+  const handleOpenCreateDishModal = () => {
+    resetDishForm();
+    setIsAddDishModalOpen(true);
+  };
+
+  // Open Modal in Edit mode, prefilled with the existing dish data
+  const handleOpenEditDishModal = (dish: Dish) => {
+    setEditingDishId(dish.id);
+    setNewTitle(dish.title);
+    setNewCategory(dish.category);
+    setCustomCategoryInput('');
+    setNewPrice(String(dish.price));
+    setNewDescription(dish.description);
+    setNewImageUrl(dish.imageUrl || '');
+    setPreviewImage(dish.imageUrl || null);
+    setNewTimeMinutes(String(dish.estimatedCookingTimeMinutes || 15));
+    setNewBadge(dish.badge || '');
+    setIsAddDishModalOpen(true);
+  };
+
+  // Create or Save an edited Dish Slot
   const handleCreateNewDish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newPrice.trim()) return;
@@ -164,30 +225,60 @@ export default function AdminDashboardPage() {
     }
 
     setIsSubmittingDish(true);
-    const created = await addNewDishInSupabase({
+
+    const dishFields = {
       title: newTitle.trim(),
       description: newDescription.trim() || 'Свежее аппетитное блюдо от шеф-повара DAYMOHKCOFEE.',
       price: parseFloat(newPrice) || 100,
       category: finalCategory,
-      isAvailable: true,
       estimatedCookingTimeMinutes: parseInt(newTimeMinutes) || 15,
       badge: newBadge.trim() || null,
       imageUrl: newImageUrl.trim() || previewImage || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80',
-    });
+    };
 
-    if (created) {
-      setDishes((prev) => [created, ...prev]);
+    if (editingDishId) {
+      await updateDishInSupabase(editingDishId, dishFields);
+      setDishes((prev) =>
+        prev.map((d) => (d.id === editingDishId ? { ...d, ...dishFields } : d))
+      );
       setCategoriesState(fetchCategories());
-      setNotification(`✓ Новое блюдо "${created.title}" опубликовано и моментально отображено на витрине!`);
-      // Reset Form
-      setNewTitle('');
-      setNewDescription('');
-      setNewImageUrl('');
-      setPreviewImage(null);
-      setNewBadge('');
+      setNotification(`✓ Блюдо "${dishFields.title}" обновлено.`);
+      resetDishForm();
       setIsAddDishModalOpen(false);
+    } else {
+      const created = await addNewDishInSupabase({ ...dishFields, isAvailable: true });
+
+      if (created) {
+        setDishes((prev) => [created, ...prev]);
+        setCategoriesState(fetchCategories());
+        setNotification(`✓ Новое блюдо "${created.title}" опубликовано и моментально отображено на витрине!`);
+        resetDishForm();
+        setIsAddDishModalOpen(false);
+      }
     }
+
     setIsSubmittingDish(false);
+  };
+
+  // Archive a published Dish (soft delete — hides it everywhere, keeps history)
+  const handleArchiveDish = async (dish: Dish) => {
+    if (!confirm(`Архивировать блюдо "${dish.title}"? Оно будет скрыто из меню и с витрины, но карточку можно будет восстановить.`)) {
+      return;
+    }
+    await archiveDishInSupabase(dish.id);
+    setDishes((prev) =>
+      prev.map((d) => (d.id === dish.id ? { ...d, isArchived: true, isAvailable: false } : d))
+    );
+    setNotification(`Блюдо "${dish.title}" перемещено в архив.`);
+  };
+
+  // Restore an archived Dish back into active menu management
+  const handleRestoreDish = async (dish: Dish) => {
+    await restoreDishFromArchiveInSupabase(dish.id);
+    setDishes((prev) =>
+      prev.map((d) => (d.id === dish.id ? { ...d, isArchived: false } : d))
+    );
+    setNotification(`Блюдо "${dish.title}" восстановлено из архива. Включите его в стоп-листе, чтобы показать на витрине.`);
   };
 
   // Resolve Complaint
@@ -418,7 +509,7 @@ export default function AdminDashboardPage() {
               </p>
             </div>
             <button
-              onClick={() => setIsAddDishModalOpen(true)}
+              onClick={handleOpenCreateDishModal}
               className="btn-primary"
               style={{
                 backgroundColor: 'var(--color-warm-terracotta)',
@@ -438,7 +529,7 @@ export default function AdminDashboardPage() {
               gap: '20px',
             }}
           >
-            {dishes.map((dish) => (
+            {dishes.filter((dish) => !dish.isArchived).map((dish) => (
               <div
                 key={dish.id}
                 style={{
@@ -511,6 +602,39 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
 
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                    <button
+                      onClick={() => handleOpenEditDishModal(dish)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: '1px solid var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text-primary)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      ✏️ Редактировать
+                    </button>
+                    <button
+                      onClick={() => handleArchiveDish(dish)}
+                      style={{
+                        padding: '10px',
+                        borderRadius: 'var(--radius-sm)',
+                        border: 'none',
+                        backgroundColor: 'rgba(198, 40, 40, 0.1)',
+                        color: 'var(--color-error)',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      🗑️ Архивировать
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => handleToggleDish(dish.id, dish.isAvailable)}
                     style={{
@@ -531,6 +655,59 @@ export default function AdminDashboardPage() {
               </div>
             ))}
           </div>
+
+          {dishes.some((dish) => dish.isArchived) && (
+            <div
+              style={{
+                backgroundColor: 'var(--color-surface-subtle)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                padding: '20px',
+              }}
+            >
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '1.05rem', fontWeight: 700 }}>
+                🗄️ Архив блюд ({dishes.filter((dish) => dish.isArchived).length})
+              </h3>
+              <div style={{ display: 'grid', gap: '10px' }}>
+                {dishes
+                  .filter((dish) => dish.isArchived)
+                  .map((dish) => (
+                    <div
+                      key={dish.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '10px 14px',
+                        opacity: 0.75,
+                      }}
+                    >
+                      <span style={{ fontSize: '0.9rem' }}>
+                        <strong>{dish.title}</strong> — {dish.category}, {dish.price} EGP
+                      </span>
+                      <button
+                        onClick={() => handleRestoreDish(dish)}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: 'none',
+                          backgroundColor: 'rgba(46, 125, 50, 0.15)',
+                          color: 'var(--color-success)',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontSize: '0.85rem',
+                        }}
+                      >
+                        ♻️ Восстановить
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -646,9 +823,14 @@ export default function AdminDashboardPage() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>➕ Публикация нового блюда</h2>
+              <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>
+                {editingDishId ? '✏️ Редактирование блюда' : '➕ Публикация нового блюда'}
+              </h2>
               <button
-                onClick={() => setIsAddDishModalOpen(false)}
+                onClick={() => {
+                  resetDishForm();
+                  setIsAddDishModalOpen(false);
+                }}
                 style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }}
               >
                 &times;
@@ -657,41 +839,24 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleCreateNewDish} style={{ display: 'grid', gap: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                  Название блюда *
-                </label>
+                <label style={dishFormLabelStyle}>Название блюда *</label>
                 <input
                   type="text"
                   required
                   placeholder="Например: Люля-кебаб из говядины"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.95rem',
-                  }}
+                  style={dishFormInputStyle}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={dishFormFieldPairStyle}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Категория (Выпадающий список) *
-                  </label>
+                  <label style={dishFormLabelStyle}>Категория *</label>
                   <select
                     value={newCategory}
                     onChange={(e) => setNewCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                      backgroundColor: 'var(--color-surface)',
-                    }}
+                    style={{ ...dishFormInputStyle, backgroundColor: 'var(--color-surface)' }}
                   >
                     {categories.map((c) => (
                       <option key={c} value={c}>
@@ -703,9 +868,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Цена (EGP) *
-                  </label>
+                  <label style={dishFormLabelStyle}>Цена (EGP) *</label>
                   <input
                     type="number"
                     required
@@ -713,56 +876,33 @@ export default function AdminDashboardPage() {
                     placeholder="150"
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               </div>
 
               {newCategory === 'NEW_CUSTOM' && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Название новой категории *
-                  </label>
+                  <label style={dishFormLabelStyle}>Название новой категории *</label>
                   <input
                     type="text"
                     required
                     placeholder="Введите название новой категории"
                     value={customCategoryInput}
                     onChange={(e) => setCustomCategoryInput(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               )}
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                  Подробный состав и описание ингредиентов
-                </label>
+                <label style={dishFormLabelStyle}>Подробный состав и описание ингредиентов</label>
                 <textarea
                   rows={3}
                   placeholder="Опишите состав блюда, специи, вес порции и особенности приготовления..."
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '10px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.9rem',
-                    fontFamily: 'inherit',
-                  }}
+                  style={{ ...dishFormInputStyle, fontSize: '0.9rem', fontFamily: 'inherit' }}
                 />
               </div>
 
@@ -776,7 +916,7 @@ export default function AdminDashboardPage() {
                   backgroundColor: 'var(--color-surface-subtle)',
                 }}
               >
-                <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 800, marginBottom: '8px', cursor: 'pointer' }}>
+                <label style={{ ...dishFormLabelStyle, cursor: 'pointer' }}>
                   📁 Загрузить фото с компьютера (Локальный носитель)
                 </label>
                 <input
@@ -797,13 +937,7 @@ export default function AdminDashboardPage() {
                     setNewImageUrl(e.target.value);
                     setPreviewImage(e.target.value);
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--color-border)',
-                    fontSize: '0.85rem',
-                  }}
+                  style={dishFormInputStyle}
                 />
 
                 {previewImage && (
@@ -820,40 +954,24 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div style={dishFormFieldPairStyle}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Время готовки (мин)
-                  </label>
+                  <label style={dishFormLabelStyle}>Время готовки (мин)</label>
                   <input
                     type="number"
                     value={newTimeMinutes}
                     onChange={(e) => setNewTimeMinutes(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, marginBottom: '6px' }}>
-                    Бейдж (необязательно)
-                  </label>
+                  <label style={dishFormLabelStyle}>Бейдж (необязательно)</label>
                   <input
                     type="text"
                     placeholder="Шеф-выбор, Хит..."
                     value={newBadge}
                     onChange={(e) => setNewBadge(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
-                    }}
+                    style={dishFormInputStyle}
                   />
                 </div>
               </div>
@@ -861,7 +979,10 @@ export default function AdminDashboardPage() {
               <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
                 <button
                   type="button"
-                  onClick={() => setIsAddDishModalOpen(false)}
+                  onClick={() => {
+                    resetDishForm();
+                    setIsAddDishModalOpen(false);
+                  }}
                   className="btn-secondary"
                   style={{ flex: 1, padding: '12px' }}
                 >
@@ -873,7 +994,11 @@ export default function AdminDashboardPage() {
                   className="btn-primary"
                   style={{ flex: 1, padding: '12px', backgroundColor: 'var(--color-warm-terracotta)' }}
                 >
-                  {isSubmittingDish ? 'Публикация...' : 'Опубликовать блюдо онлайн'}
+                  {isSubmittingDish
+                    ? 'Сохранение...'
+                    : editingDishId
+                    ? 'Сохранить изменения'
+                    : 'Опубликовать блюдо онлайн'}
                 </button>
               </div>
             </form>
