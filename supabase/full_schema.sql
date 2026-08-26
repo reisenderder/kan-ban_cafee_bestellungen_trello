@@ -38,9 +38,20 @@ CREATE TABLE IF NOT EXISTS public.orders (
   address TEXT NOT NULL,
   status public.order_status NOT NULL DEFAULT 'NEW',
   total_amount NUMERIC(10, 2) NOT NULL CHECK (total_amount >= 0),
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
   cooking_started_at TIMESTAMPTZ,
   cooking_completed_at TIMESTAMPTZ,
   target_cooking_time_minutes INT DEFAULT 15,
   delay_reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- 5. Таблица переписки клиента и менеджера по заказу (Order Chat Messages)
+CREATE TABLE IF NOT EXISTS public.order_chat_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id UUID NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
+  sender TEXT NOT NULL CHECK (sender IN ('CLIENT', 'MANAGER')),
+  text TEXT NOT NULL,
+  is_read_by_manager BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

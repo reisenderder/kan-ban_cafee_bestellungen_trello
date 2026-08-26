@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { OtpVerificationModal } from './OtpVerificationModal';
 import { ClientOrderChatModal } from './ClientOrderChatModal';
+import { createOrderInSupabase, Order } from '../lib/orders/orders';
 
 export function CartDrawer() {
   const {
@@ -22,6 +23,8 @@ export function CartDrawer() {
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [isClientChatOpen, setIsClientChatOpen] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
 
   if (!isCartOpen) return null;
 
@@ -54,9 +57,25 @@ export function CartDrawer() {
     setIsOtpOpen(true);
   };
 
-  const handleOtpVerified = () => {
+  const handleOtpVerified = async () => {
     setIsOtpOpen(false);
-    setSubmitMessage('Канал успешного верифицирован! 6-значный OTP код подтверждён. Заказ передан менеджеру DAYMOHKCOFEE.');
+    setIsCreatingOrder(true);
+
+    const order = await createOrderInSupabase({
+      customerName: deliveryDetails.contactName,
+      customerPhone: deliveryDetails.contactPhone,
+      address: deliveryDetails.address,
+      items: items.map((item) => ({
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      totalAmount,
+    });
+
+    setCreatedOrder(order);
+    setIsCreatingOrder(false);
+    setSubmitMessage(`Канал успешно верифицирован! 6-значный OTP код подтверждён. Заказ №${order.orderNumber} передан менеджеру DAYMOHKCOFEE.`);
     clearCart();
   };
 
@@ -143,7 +162,11 @@ export function CartDrawer() {
 
           {/* Drawer Content */}
           <div style={{ flex: 1, padding: '24px' }}>
-            {submitMessage ? (
+            {isCreatingOrder ? (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--color-text-secondary)' }}>
+                <p style={{ fontSize: '1rem' }}>Оформляем ваш заказ...</p>
+              </div>
+            ) : submitMessage ? (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div
                   style={{
@@ -550,7 +573,8 @@ export function CartDrawer() {
 
       <ClientOrderChatModal
         isOpen={isClientChatOpen}
-        orderNumber="ORD-2026-101"
+        orderId={createdOrder?.id || ''}
+        orderNumber={createdOrder?.orderNumber || ''}
         onClose={() => setIsClientChatOpen(false)}
       />
     </>

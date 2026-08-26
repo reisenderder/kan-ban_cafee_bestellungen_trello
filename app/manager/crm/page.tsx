@@ -1,6 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Order,
+  OrderStatus,
+  fetchAllOrders,
+  updateOrderStatusInSupabase,
+  subscribeToOrdersRealtime,
+} from '../../../lib/orders/orders';
+import {
+  ChatMessage,
+  fetchChatMessages,
+  sendChatMessage,
+  markMessagesReadByManager,
+  fetchUnreadCounts,
+  subscribeToChatRealtime,
+  subscribeToAllChatRealtime,
+} from '../../../lib/orders/chat';
 
 export interface CrmOrder {
   id: string;
@@ -8,79 +24,71 @@ export interface CrmOrder {
   customerName: string;
   customerPhoneMasked: string;
   address: string;
-  status: 'NEW' | 'ACCEPTED' | 'COOKING' | 'READY_FOR_DELIVERY' | 'DELIVERING' | 'COMPLETED' | 'PROBLEM';
+  status: OrderStatus;
   itemsSummary: string;
   totalAmount: number;
   createdAt: string;
   items: { name: string; quantity: number }[];
-  chatMessages?: { sender: 'CLIENT' | 'MANAGER'; text: string; time: string }[];
   unreadMessagesCount?: number;
 }
 
-const initialOrders: CrmOrder[] = [
-  {
-    id: 'ord-101',
-    orderNumber: '20260824-0001',
-    customerName: 'Мухаммад А.',
-    customerPhoneMasked: '+20 12* *** *890',
-    address: 'Каир, р-н Наср Сити, ул. Аль-Аббасия 14',
-    status: 'NEW',
-    itemsSummary: 'Люля-кебаб x2, Лимонад x1',
-    totalAmount: 480,
-    createdAt: '10:15',
-    items: [
-      { name: 'Люля-кебаб', quantity: 2 },
-      { name: 'Лимонад', quantity: 1 },
-    ],
-    unreadMessagesCount: 2,
-    chatMessages: [
-      { sender: 'CLIENT', text: 'Здравствуйте! Уточните, соус острый?', time: '10:16' },
-      { sender: 'CLIENT', text: 'И можно положить больше салфеток?', time: '10:17' },
-      { sender: 'MANAGER', text: 'Добрый день! Нет, соус традиционный нежный. Салфетки добавим!', time: '10:18' },
-    ],
-  },
-  {
-    id: 'ord-102',
-    orderNumber: '20260824-0002',
-    customerName: 'Фатима К.',
-    customerPhoneMasked: '+20 10* *** *456',
-    address: 'Каир, р-н Нового Каира, Проспект 90',
-    status: 'ACCEPTED',
-    itemsSummary: 'Шашлык x1, Суп дня x2',
-    totalAmount: 700,
-    createdAt: '10:05',
-    unreadMessagesCount: 0,
-    items: [
-      { name: 'Шашлык из курицы', quantity: 1 },
-      { name: 'Суп дня', quantity: 2 },
-    ],
-  },
-  {
-    id: 'ord-103',
-    orderNumber: '20260824-0003',
-    customerName: 'Ахмад Т.',
-    customerPhoneMasked: '+20 11* *** *321',
-    address: 'Каир, р-н Маади, ул. 105',
-    status: 'COOKING',
-    itemsSummary: 'Хачапури x1, Лимонад x3',
-    totalAmount: 840,
-    createdAt: '09:45',
-    unreadMessagesCount: 1,
-    items: [
-      { name: 'Хачапури по-аджарски', quantity: 1 },
-      { name: 'Лимонад', quantity: 3 },
-    ],
-    chatMessages: [
-      { sender: 'CLIENT', text: 'Сколько примерно осталось времени готовки?', time: '09:50' },
-    ],
-  },
-];
+// Маскирует телефон клиента для отображения в CRM (полный номер не должен быть виден без необходимости)
+function maskPhone(phone: string): string {
+  if (!phone || phone.length < 6) return phone;
+  return `${phone.slice(0, 6)}****${phone.slice(-2)}`;
+}
+
+function mapOrderToCrmOrder(order: Order): CrmOrder {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    customerName: order.customerName,
+    customerPhoneMasked: maskPhone(order.customerPhone),
+    address: order.address,
+    status: order.status,
+    itemsSummary: order.items.map((item) => `${item.title} x${item.quantity}`).join(', '),
+    totalAmount: order.totalAmount,
+    createdAt: new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    items: order.items.map((item) => ({ name: item.title, quantity: item.quantity })),
+  };
+}
 
 export default function ManagerCrmPage() {
-  const [orders, setOrders] = useState<CrmOrder[]>(initialOrders);
+  const [orders, setOrders] = useState<CrmOrder[]>([]);
   const [selectedChatOrder, setSelectedChatOrder] = useState<CrmOrder | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMsgText, setNewMsgText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
+
+  const loadOrders = useCallback(async () => {
+    const [fetched, unreadCounts] = await Promise.all([fetchAllOrders(), fetchUnreadCounts()]);
+    setOrders(
+      fetched.map((order) => ({
+        ...mapOrderToCrmOrder(order),
+        unreadMessagesCount: unreadCounts[order.id] || 0,
+      }))
+    );
+  }, []);
+
+  // Загрузка реальных заказов из Supabase и подписка на Realtime (новые заказы и сообщения появляются без перезагрузки)
+  useEffect(() => {
+    loadOrders();
+    const unsubOrders = subscribeToOrdersRealtime(() => loadOrders());
+    const unsubChat = subscribeToAllChatRealtime(() => loadOrders());
+    return () => {
+      unsubOrders();
+      unsubChat();
+    };
+  }, [loadOrders]);
+
+  // Живая переписка по открытому заказу
+  useEffect(() => {
+    if (!selectedChatOrder) return;
+    const unsubscribe = subscribeToChatRealtime(selectedChatOrder.id, () => {
+      fetchChatMessages(selectedChatOrder.id).then(setChatMessages);
+    });
+    return unsubscribe;
+  }, [selectedChatOrder]);
 
   // Status columns in Kanban
   const columns: { title: string; status: CrmOrder['status']; color: string }[] = [
@@ -88,14 +96,18 @@ export default function ManagerCrmPage() {
     { title: 'Приняты в работу', status: 'ACCEPTED', color: 'var(--color-deep-forest)' },
     { title: 'Готовятся', status: 'COOKING', color: 'var(--color-deep-forest)' },
     { title: 'Готовы к выдаче', status: 'READY_FOR_DELIVERY', color: 'var(--color-success)' },
-    { title: 'Доставляются', status: 'DELIVERING', color: 'var(--color-deep-forest)' },
-    { title: 'Завершённые', status: 'COMPLETED', color: 'var(--color-text-muted)' },
+    { title: 'Доставляются', status: 'IN_TRANSIT', color: 'var(--color-deep-forest)' },
+    { title: 'Завершённые', status: 'DELIVERED', color: 'var(--color-text-muted)' },
     { title: 'Проблема / Урегулирование', status: 'PROBLEM', color: 'var(--color-error)' },
   ];
 
-  // Open Chat Drawer and Reset Unread Counter to 0
-  const handleOpenChat = (order: CrmOrder) => {
+  // Open Chat Drawer, load real messages and mark them as read (resets unread counter)
+  const handleOpenChat = async (order: CrmOrder) => {
     setSelectedChatOrder(order);
+    setChatMessages([]);
+    const msgs = await fetchChatMessages(order.id);
+    setChatMessages(msgs);
+    await markMessagesReadByManager(order.id);
     setOrders((prev) =>
       prev.map((o) => (o.id === order.id ? { ...o, unreadMessagesCount: 0 } : o))
     );
@@ -105,6 +117,7 @@ export default function ManagerCrmPage() {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     );
+    updateOrderStatusInSupabase(orderId, newStatus);
   };
 
   // Copy order text for courier
@@ -132,28 +145,15 @@ export default function ManagerCrmPage() {
   };
 
   // Send message in chat
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChatOrder || !newMsgText.trim()) return;
 
-    const newMsg = {
-      sender: 'MANAGER' as const,
-      text: newMsgText.trim(),
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setOrders((prev) =>
-      prev.map((o) => {
-        if (o.id === selectedChatOrder.id) {
-          const updatedChat = [...(o.chatMessages || []), newMsg];
-          setSelectedChatOrder({ ...o, chatMessages: updatedChat });
-          return { ...o, chatMessages: updatedChat, unreadMessagesCount: 0 };
-        }
-        return o;
-      })
-    );
-
+    const text = newMsgText.trim();
     setNewMsgText('');
+
+    const newMsg = await sendChatMessage(selectedChatOrder.id, 'MANAGER', text);
+    setChatMessages((prev) => [...prev, newMsg]);
   };
 
   return (
@@ -330,7 +330,7 @@ export default function ManagerCrmPage() {
                               boxShadow: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'var(--shadow-sm)' : 'none',
                             }}
                           >
-                            💬 Чат {ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? `🔴 (${ord.unreadMessagesCount} нов.)` : `(${ord.chatMessages?.length || 0})`}
+                            💬 Чат {ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? `🔴 (${ord.unreadMessagesCount} нов.)` : ''}
                           </button>
                         </div>
 
@@ -486,14 +486,14 @@ export default function ManagerCrmPage() {
 
             {/* Chat Body */}
             <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {(!selectedChatOrder.chatMessages || selectedChatOrder.chatMessages.length === 0) ? (
+              {chatMessages.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>
                   Сообщений по заказу пока нет
                 </div>
               ) : (
-                selectedChatOrder.chatMessages.map((msg, idx) => (
+                chatMessages.map((msg) => (
                   <div
-                    key={idx}
+                    key={msg.id}
                     style={{
                       alignSelf: msg.sender === 'MANAGER' ? 'flex-end' : 'flex-start',
                       backgroundColor: msg.sender === 'MANAGER' ? 'var(--color-deep-forest)' : 'var(--color-surface-subtle)',
@@ -506,7 +506,7 @@ export default function ManagerCrmPage() {
                   >
                     <div>{msg.text}</div>
                     <div style={{ fontSize: '0.7rem', opacity: 0.7, marginTop: '4px', textAlign: 'right' }}>
-                      {msg.time}
+                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 ))
