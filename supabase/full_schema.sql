@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS public.dishes (
   is_archived BOOLEAN NOT NULL DEFAULT false,
   estimated_cooking_time_minutes INT DEFAULT 15,
   badge TEXT,
+  -- Фото блюда: сжатый Canvas-JPEG в виде data URL (см. lib/menu/dishes.ts).
+  -- Без этой колонки публикация блюда с фотографией отклоняется целиком.
+  image_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -55,3 +58,17 @@ CREATE TABLE IF NOT EXISTS public.order_chat_messages (
   is_read_by_manager BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- 6. Row Level Security
+-- СОЗНАТЕЛЬНО НЕ ВКЛЮЧЕНА для dishes / orders / order_chat_messages.
+-- Причина: у приложения пока нет настоящей аутентификации персонала — витрина,
+-- панель администратора и CRM менеджера ходят в БД одним и тем же анонимным
+-- ключом, поэтому RLS не может отличить менеджера от постороннего. Если Supabase
+-- включил RLS автоматически при создании таблицы через Table Editor, её нужно
+-- ОТКЛЮЧИТЬ (Database → Policies → Disable RLS), иначе анонимный ключ не сможет
+-- ни писать, ни читать, и всё приложение молча уходит в localStorage-подстраховку.
+--
+-- ДОЛГ ПО БЕЗОПАСНОСТИ: при выключенной RLS данные клиентов (имя, телефон, адрес)
+-- читаемы по анонимному ключу. До допуска реальных клиентов нужно завести учётные
+-- записи персонала, закрыть страницы кабинетов и вернуть RLS со строгими политиками
+-- (клиент — только INSERT заказа/сообщения; чтение заказов — только менеджер).
