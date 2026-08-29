@@ -20,7 +20,7 @@
 |--------|--------|--------|--------|
 | A | 1, 2 | ✅ сделано, `typecheck`+`build`+headless-QA пройдены | `39c2fc2` |
 | B | 3, 7 | ✅ сделано, `typecheck`+`build`+headless-QA пройдены | `5edcf42` |
-| C | 4, 5, 6 | ✅ сделано, `typecheck`+`build`+headless-QA пройдены | (этот коммит) |
+| C | 4, 5, 6 | ✅ сделано, `typecheck`+`build`+headless-QA пройдены | `ff15d3b` |
 | **D** | **8, 9** | **⏭️ следующая** | — |
 | E | 10 | не начата | — |
 
