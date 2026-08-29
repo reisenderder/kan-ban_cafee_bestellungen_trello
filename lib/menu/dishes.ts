@@ -441,3 +441,29 @@ export async function archiveDishInSupabase(dishId: string): Promise<boolean> {
 export async function restoreDishFromArchiveInSupabase(dishId: string): Promise<boolean> {
   return updateDishInSupabase(dishId, { isArchived: false });
 }
+
+/**
+ * Жёсткое (безвозвратное) удаление блюда. Доступно только для блюда в архиве —
+ * см. specs/03_feature_specs/Feature_Menu_Management.md §13.4. Стирает строку из
+ * Supabase у всех устройств; восстановление невозможно.
+ */
+export async function deleteDishPermanentlyInSupabase(dishId: string): Promise<boolean> {
+  const currentDishes = getStoredDishes();
+  const target = currentDishes.find((d) => d.id === dishId);
+  if (target && !target.isArchived) {
+    // Страховка: жёсткое удаление только из архива
+    return false;
+  }
+
+  saveStoredDishes(currentDishes.filter((d) => d.id !== dishId));
+
+  try {
+    const supabase = createClient();
+    await supabase.from('dishes').delete().eq('id', dishId);
+  } catch (err) {
+    // Supabase недоступен — блюдо удалено локально, синхронизируется при следующем fetch
+  }
+
+  notifyMenuUpdated();
+  return true;
+}

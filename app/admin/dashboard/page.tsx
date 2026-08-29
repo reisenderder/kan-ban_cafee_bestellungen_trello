@@ -8,6 +8,7 @@ import {
   updateDishInSupabase,
   archiveDishInSupabase,
   restoreDishFromArchiveInSupabase,
+  deleteDishPermanentlyInSupabase,
   toggleDishAvailabilityInSupabase,
   fetchCategories,
   addCategory,
@@ -107,6 +108,7 @@ export default function AdminDashboardPage() {
   const [isSubmittingDish, setIsSubmittingDish] = useState<boolean>(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [editingDishId, setEditingDishId] = useState<string | null>(null);
+  const [dishFormError, setDishFormError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -114,9 +116,8 @@ export default function AdminDashboardPage() {
       setDishes(data);
       const cats = fetchCategories();
       setCategoriesState(cats);
-      if (cats.length > 0) {
-        setNewCategory(cats[0]);
-      }
+      // Категорию НЕ подставляем — администратор выбирает её осознанно
+      // (specs/03_feature_specs/Feature_Menu_Management.md §16 п.6)
     }
     loadData();
   }, []);
@@ -190,6 +191,7 @@ export default function AdminDashboardPage() {
     setNewTimeMinutes('15');
     setNewBadge('');
     setEditingDishId(null);
+    setDishFormError(null);
   };
 
   // Open Modal in Create mode
@@ -201,6 +203,7 @@ export default function AdminDashboardPage() {
   // Open Modal in Edit mode, prefilled with the existing dish data
   const handleOpenEditDishModal = (dish: Dish) => {
     setEditingDishId(dish.id);
+    setDishFormError(null);
     setNewTitle(dish.title);
     setNewCategory(dish.category);
     setCustomCategoryInput('');
@@ -216,11 +219,17 @@ export default function AdminDashboardPage() {
   // Create or Save an edited Dish Slot
   const handleCreateNewDish = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDishFormError(null);
     if (!newTitle.trim() || !newPrice.trim()) return;
 
+    // Категория должна быть выбрана осознанно — приглашение «Выберите категорию» не сохраняется
+    if (!newCategory) {
+      setDishFormError('Сначала выберите категорию блюда.');
+      return;
+    }
     const finalCategory = newCategory === 'NEW_CUSTOM' ? customCategoryInput.trim() : newCategory;
     if (!finalCategory) {
-      alert('Укажите или выберите категорию блюда!');
+      setDishFormError('Введите название новой категории.');
       return;
     }
 
@@ -279,6 +288,25 @@ export default function AdminDashboardPage() {
       prev.map((d) => (d.id === dish.id ? { ...d, isArchived: false } : d))
     );
     setNotification(`Блюдо "${dish.title}" восстановлено из архива. Включите его в стоп-листе, чтобы показать на витрине.`);
+  };
+
+  // Hard-delete an archived Dish permanently (irreversible, removes DB row for everyone)
+  // Feature_Menu_Management.md §13.4 — доступно только для блюда в архиве
+  const handleDeleteDishPermanently = async (dish: Dish) => {
+    const confirmed = confirm(
+      `УДАЛИТЬ НАВСЕГДА блюдо «${dish.title}»?\n\n` +
+        `Это действие необратимо. Блюдо будет полностью стёрто из базы данных ` +
+        `и исчезнет у всех устройств. Восстановить его будет невозможно.`
+    );
+    if (!confirmed) return;
+
+    const ok = await deleteDishPermanentlyInSupabase(dish.id);
+    if (!ok) {
+      setNotification('Удалить навсегда можно только блюдо, которое находится в архиве.');
+      return;
+    }
+    setDishes((prev) => prev.filter((d) => d.id !== dish.id));
+    setNotification(`Блюдо «${dish.title}» удалено навсегда.`);
   };
 
   // Resolve Complaint
@@ -688,21 +716,39 @@ export default function AdminDashboardPage() {
                       <span style={{ fontSize: '0.9rem' }}>
                         <strong>{dish.title}</strong> — {dish.category}, {dish.price} EGP
                       </span>
-                      <button
-                        onClick={() => handleRestoreDish(dish)}
-                        style={{
-                          padding: '8px 14px',
-                          borderRadius: 'var(--radius-sm)',
-                          border: 'none',
-                          backgroundColor: 'rgba(46, 125, 50, 0.15)',
-                          color: 'var(--color-success)',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        ♻️ Восстановить
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                        <button
+                          onClick={() => handleRestoreDish(dish)}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: 'none',
+                            backgroundColor: 'rgba(46, 125, 50, 0.15)',
+                            color: 'var(--color-success)',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                          }}
+                        >
+                          ♻️ Восстановить
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDishPermanently(dish)}
+                          style={{
+                            padding: '8px 14px',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid var(--color-error)',
+                            backgroundColor: 'transparent',
+                            color: 'var(--color-error)',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            fontSize: '0.85rem',
+                          }}
+                          title="Безвозвратно стереть блюдо из базы данных"
+                        >
+                          🗑️ Удалить навсегда
+                        </button>
+                      </div>
                     </div>
                   ))}
               </div>
@@ -855,9 +901,20 @@ export default function AdminDashboardPage() {
                   <label style={dishFormLabelStyle}>Категория *</label>
                   <select
                     value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    style={{ ...dishFormInputStyle, backgroundColor: 'var(--color-surface)' }}
+                    onChange={(e) => {
+                      setNewCategory(e.target.value);
+                      setDishFormError(null);
+                    }}
+                    style={{
+                      ...dishFormInputStyle,
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: dishFormError ? 'var(--color-error)' : 'var(--color-border)',
+                      color: newCategory ? 'inherit' : 'var(--color-text-muted)',
+                    }}
                   >
+                    <option value="" disabled>
+                      — Выберите категорию —
+                    </option>
                     {categories.map((c) => (
                       <option key={c} value={c}>
                         {c}
@@ -865,6 +922,19 @@ export default function AdminDashboardPage() {
                     ))}
                     <option value="NEW_CUSTOM">+ Создать новую категорию...</option>
                   </select>
+                  {dishFormError && (
+                    <span
+                      style={{
+                        display: 'block',
+                        marginTop: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: 'var(--color-error)',
+                      }}
+                    >
+                      {dishFormError}
+                    </span>
+                  )}
                 </div>
 
                 <div>
