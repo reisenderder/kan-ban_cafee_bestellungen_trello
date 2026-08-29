@@ -185,9 +185,39 @@ export function CartDrawer() {
                   ✓
                 </div>
                 <h3 style={{ marginBottom: '12px' }}>Заказ успешно верифицирован!</h3>
-                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', marginBottom: '24px' }}>
+                <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem', marginBottom: '20px' }}>
                   {submitMessage}
                 </p>
+
+                {createdOrder && (
+                  <div
+                    style={{
+                      textAlign: 'left',
+                      backgroundColor: 'var(--color-surface-subtle)',
+                      border: '2px solid var(--color-warm-terracotta)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '16px 18px',
+                      marginBottom: '20px',
+                    }}
+                  >
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: '2px' }}>
+                      Номер заказа
+                    </div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '0.03em', marginBottom: '10px' }}>
+                      {createdOrder.orderNumber}
+                    </div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-text-secondary)', marginBottom: '2px' }}>
+                      Код доступа к заказу
+                    </div>
+                    <div style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '0.35em', color: 'var(--color-warm-terracotta)' }}>
+                      {createdOrder.chatAccessCode}
+                    </div>
+                    <p style={{ fontSize: '0.82rem', color: 'var(--color-text-primary)', margin: '10px 0 0 0', lineHeight: 1.45 }}>
+                      ⚠️ <strong>Сохраните номер заказа и код.</strong> По ним вы вернётесь
+                      к заказу и чату с менеджером с любого устройства — через «Мои заказы».
+                    </p>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <button

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
-import { fetchAvailableDishes, Dish, defaultDishes, fetchCategories, subscribeToMenuUpdates } from '../lib/menu/dishes';
+import { fetchAvailableDishes, Dish, defaultDishes, fetchCategories, subscribeToMenuUpdates, subscribeToDishesRealtime } from '../lib/menu/dishes';
 
 export default function HomePage() {
   const { items, addItem, updateQuantity } = useCart();
@@ -28,12 +28,20 @@ export default function HomePage() {
   useEffect(() => {
     reloadMenuData();
 
-    // Zero-page-refresh live update listener
-    const unsubscribe = subscribeToMenuUpdates(() => {
+    // Same-browser / same-device live update (localStorage + custom event)
+    const unsubscribeLocal = subscribeToMenuUpdates(() => {
       reloadMenuData();
     });
 
-    return () => unsubscribe();
+    // Cross-device live update via Supabase Realtime on the `dishes` table (пункт 3)
+    const unsubscribeRealtime = subscribeToDishesRealtime(() => {
+      reloadMenuData();
+    });
+
+    return () => {
+      unsubscribeLocal();
+      unsubscribeRealtime();
+    };
   }, []);
 
   const filteredDishes = selectedCategory === 'Все'

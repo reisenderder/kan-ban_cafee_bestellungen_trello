@@ -30,6 +30,20 @@
 ##### 🗄️ [DATABASE]
 * Миграции для группы A не требуются.
 
+#### Группа B — живая синхронизация витрины + возврат клиента к заказу (пункты 3, 7)
+
+##### ⚙️ [FEATURE]
+* **Витрина обновляется между устройствами без F5** (пункт 3): новая подписка `subscribeToDishesRealtime()` в [`lib/menu/dishes.ts`](../lib/menu/dishes.ts) по образцу `subscribeToOrdersRealtime` (Supabase Realtime, `postgres_changes`, таблица `dishes`). В [`app/page.tsx`](../app/page.tsx) витрина теперь подписана и на локальные события (`daymohk_menu_updated` / `storage`), и на Realtime по `dishes` — публикация, скрытие, изменение цены/фото и жёсткое удаление блюда с одного устройства сразу видны на витрине другого.
+* **Возврат клиента к заказу и чату с любого устройства** (пункт 7): при оформлении заказа клиент получает **4-значный код доступа**. Код генерируется в `createOrderInSupabase` — то есть уже после успешной OTP-верификации; в БД хранится только SHA-256 хэш (`crypto.subtle`), открытый код показывается клиенту один раз. В [`components/CartDrawer.tsx`](../components/CartDrawer.tsx) после оформления крупно выводятся номер заказа и код с подписью «Сохраните номер и код». Новый компонент [`components/MyOrdersPanel.tsx`](../components/MyOrdersPanel.tsx) — панель «📦 Мои заказы» из шапки ([`components/Navbar.tsx`](../components/Navbar.tsx)): форма «номер заказа + код» → показывает укрупнённый статус (`clientStageLabel`) и кнопку «💬 Чат с менеджером» (переиспользует `ClientOrderChatModal`); плюс список заказов, оформленных на этом устройстве (ключ `daymohk_my_orders`). Чтение заказа — через RPC `get_order_by_access` в [`lib/orders/orders.ts`](../lib/orders/orders.ts) (`fetchOrderByNumberAndCode`), с локальной подстраховкой. Панель и модалка свёрстаны mobile-first.
+
+##### 🗄️ [DATABASE] — требуют ручного применения на Production Supabase
+* [`supabase/migrations/00010_dishes_realtime.sql`](../supabase/migrations/00010_dishes_realtime.sql) — включение таблицы `dishes` в публикацию `supabase_realtime` (идемпотентно).
+* [`supabase/migrations/00011_orders_chat_access_code.sql`](../supabase/migrations/00011_orders_chat_access_code.sql) — колонка `orders.chat_access_code_hash` + RPC-функция `public.get_order_by_access(order_number, code)` (`SECURITY DEFINER`, сверяет SHA-256 хэш кода, `GRANT EXECUTE` для `anon`/`authenticated`). Расширение `pgcrypto`. Форма работает и при выключенной RLS, и после её восстановления в группе D.
+* [`supabase/full_schema.sql`](../supabase/full_schema.sql) синхронизирован.
+
+##### 🛡️ [SECURITY] — открытый долг (группа D)
+* Полная сверка чата (`order_chat_messages`) с клиентом по коду и строгие RLS-политики — в группе D (`specs/04_technical_specs/Technical_Access_Audit.md` §18 п.10). Сейчас RLS выключена — доступ по коду опирается на RPC, но данные по-прежнему читаемы анонимным ключом.
+
 ---
 
 ### 📌 Версия v1.0.0 — Боевой запуск Блока 1 (25.08.2026)

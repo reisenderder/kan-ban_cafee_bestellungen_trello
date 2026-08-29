@@ -141,6 +141,36 @@ export function subscribeToMenuUpdates(callback: () => void) {
 }
 
 /**
+ * Пункт 3 Блока 2: живое обновление витрины между устройствами.
+ * Подписка на Supabase Realtime по таблице `dishes` — по образцу
+ * subscribeToOrdersRealtime в lib/orders/orders.ts. Публикация/скрытие/изменение/
+ * удаление блюда с одного устройства отражается на витрине другого без F5.
+ * Требует включения таблицы `dishes` в публикацию supabase_realtime
+ * (миграция supabase/migrations/00010_dishes_realtime.sql).
+ */
+export function subscribeToDishesRealtime(onChange: () => void): () => void {
+  try {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('dishes-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'dishes' },
+        () => {
+          onChange();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  } catch (err) {
+    return () => {};
+  }
+}
+
+/**
  * Получить список категорий
  */
 export function fetchCategories(): string[] {

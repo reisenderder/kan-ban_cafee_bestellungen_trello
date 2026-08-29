@@ -46,8 +46,29 @@ CREATE TABLE IF NOT EXISTS public.orders (
   cooking_completed_at TIMESTAMPTZ,
   target_cooking_time_minutes INT DEFAULT 15,
   delay_reason TEXT,
+  -- Блок 2, пункт 7: SHA-256 хэш короткого кода доступа, выданного клиенту после
+  -- OTP-подтверждения. Возврат к заказу с любого устройства — по паре
+  -- «номер заказа + код» через RPC public.get_order_by_access.
+  chat_access_code_hash TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Блок 2, пункт 7: чтение заказа клиентом по паре «номер заказа + код доступа».
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE OR REPLACE FUNCTION public.get_order_by_access(p_order_number TEXT, p_code TEXT)
+RETURNS TABLE (
+  id UUID, order_number TEXT, status public.order_status,
+  items JSONB, total_amount NUMERIC, created_at TIMESTAMPTZ
+)
+LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+  SELECT o.id, o.order_number, o.status, o.items, o.total_amount, o.created_at
+  FROM public.orders o
+  WHERE o.order_number = p_order_number
+    AND o.chat_access_code_hash IS NOT NULL
+    AND o.chat_access_code_hash = encode(digest(p_code, 'sha256'), 'hex')
+  LIMIT 1;
+$$;
+GRANT EXECUTE ON FUNCTION public.get_order_by_access(TEXT, TEXT) TO anon, authenticated;
 
 -- 5. Таблица переписки клиента и менеджера по заказу (Order Chat Messages)
 CREATE TABLE IF NOT EXISTS public.order_chat_messages (
@@ -58,6 +79,10 @@ CREATE TABLE IF NOT EXISTS public.order_chat_messages (
   is_read_by_manager BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- 5.1 Supabase Realtime
+-- В публикацию supabase_realtime включены: orders (00007), dishes (00010, Блок 2 п.3),
+-- order_chat_messages (00008). Это даёт живое обновление между устройствами без F5.
 
 -- 6. Row Level Security
 -- СОЗНАТЕЛЬНО НЕ ВКЛЮЧЕНА для dishes / orders / order_chat_messages.

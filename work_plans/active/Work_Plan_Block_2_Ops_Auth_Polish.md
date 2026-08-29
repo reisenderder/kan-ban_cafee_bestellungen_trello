@@ -267,11 +267,12 @@ Supabase Auth вместо временной заглушки с логинам
 уже хранятся в Supabase с Realtime — не хватает только клиентского входа по номеру заказа.
 
 **Что делаем**:
-* **БД**: добавить колонку `chat_access_code_hash` (хэш короткого кода, напр. 4 цифры) в
-  `client_order_access` (по `../../specs/04_technical_specs/Technical_Order_Data_Model.md` §13).
-  Миграция `supabase/migrations/00011_orders_chat_access_code.sql` + фиксация в `full_schema.sql`.
-  Требует ручного применения на Production. Чтение заказа и переписки клиентом — через RPC-функцию по
-  паре `order_number` + код, под `default deny` RLS, а не открытым `SELECT`.
+* **БД**: колонка `orders.chat_access_code_hash` (SHA-256 хэш 4-значного кода) + RPC-функция
+  `get_order_by_access(order_number, code)` (`SECURITY DEFINER`). Миграция
+  `supabase/migrations/00011_orders_chat_access_code.sql` + фиксация в `full_schema.sql`. Требует
+  ручного применения на Production. RPC работает и при выключенной RLS, и после её восстановления
+  (группа D). В текущей боевой схеме таблицы `client_order_access` нет — при её вводе поле
+  переносится туда (`Technical_Order_Data_Model.md` §15 п.10).
 * Код генерируется **только после успешного OTP-подтверждения канала** (Telegram/Email). В открытом
   виде показывается клиенту один раз при оформлении; в БД — только хэш.
 * В [`lib/orders/orders.ts`](../../lib/orders/orders.ts): генерировать код после верификации;

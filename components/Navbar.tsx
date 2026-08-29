@@ -1,12 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { CartDrawer } from './CartDrawer';
+import { MyOrdersPanel } from './MyOrdersPanel';
 
 export function Navbar() {
   const { items, isCartOpen, setIsCartOpen, totalAmount } = useCart();
   const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const [isMyOrdersOpen, setIsMyOrdersOpen] = useState(false);
 
   return (
     <>
@@ -88,6 +90,21 @@ export function Navbar() {
             >
               Витрина
             </a>
+
+            <button
+              onClick={() => setIsMyOrdersOpen(true)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-primary)',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              📦 Мои заказы
+            </button>
 
             <a
               href="/login"
@@ -192,6 +209,7 @@ export function Navbar() {
       )}
 
       <CartDrawer />
+      <MyOrdersPanel isOpen={isMyOrdersOpen} onClose={() => setIsMyOrdersOpen(false)} />
     </>
   );
 }
