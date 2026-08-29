@@ -15,6 +15,8 @@ import {
   removeCategory,
   readImageFileAsDataUrl,
 } from '../../../lib/menu/dishes';
+import { StaffTopNav } from '../../../components/StaffTopNav';
+import { STAFF_SCREENS } from '../../../lib/auth/staffSession';
 
 interface EmployeeItem {
   id: string;
@@ -85,7 +87,7 @@ const dishFormFieldPairStyle: React.CSSProperties = {
 };
 
 export default function AdminDashboardPage() {
-  const [activeTab, setActiveTab] = useState<'EMPLOYEES' | 'MENU' | 'CATEGORIES' | 'COMPLAINTS'>('MENU');
+  const [activeTab, setActiveTab] = useState<'DASHBOARDS' | 'EMPLOYEES' | 'MENU' | 'CATEGORIES' | 'COMPLAINTS'>('MENU');
   const [employees, setEmployees] = useState<EmployeeItem[]>(initialEmployees);
   const [dishes, setDishes] = useState<Dish[]>([]);
   const [categories, setCategoriesState] = useState<string[]>([]);
@@ -319,6 +321,8 @@ export default function AdminDashboardPage() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+      <StaffTopNav current="admin" />
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
@@ -327,6 +331,21 @@ export default function AdminDashboardPage() {
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setActiveTab('DASHBOARDS')}
+            style={{
+              padding: '10px 18px',
+              borderRadius: 'var(--radius-full)',
+              border: activeTab === 'DASHBOARDS' ? 'none' : '1px solid var(--color-border)',
+              backgroundColor: activeTab === 'DASHBOARDS' ? 'var(--color-deep-forest)' : 'var(--color-surface)',
+              color: activeTab === 'DASHBOARDS' ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            🖥️ Дэшборды
+          </button>
+
           <button
             onClick={() => setActiveTab('EMPLOYEES')}
             style={{
@@ -412,6 +431,55 @@ export default function AdminDashboardPage() {
           >
             &times;
           </button>
+        </div>
+      )}
+
+      {/* TAB 0: DASHBOARDS — навигационный доступ администратора ко всем служебным экранам
+          (Feature_Admin_Control.md §4.1, §17 п.7). Неготовые разделы помечены «(на разработке)». */}
+      {activeTab === 'DASHBOARDS' && (
+        <div style={{ display: 'grid', gap: '16px' }}>
+          <div
+            style={{
+              backgroundColor: 'var(--color-surface-subtle)',
+              padding: '12px 16px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '0.85rem',
+              color: 'var(--color-text-secondary)',
+            }}
+          >
+            ℹ️ Администратор открывает любой служебный экран. Разделы с пометкой «(на разработке)»
+            пока работают на демонстрационных данных. Полоска навигации сверху доступна на всех
+            служебных экранах.
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+            {STAFF_SCREENS.filter((s) => s.key !== 'admin').map((screen) => (
+              <a
+                key={screen.key}
+                href={screen.href}
+                style={{
+                  display: 'block',
+                  padding: '18px 20px',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  textDecoration: 'none',
+                  color: 'var(--color-text-primary)',
+                  boxShadow: 'var(--shadow-sm)',
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '4px' }}>
+                  {screen.label}
+                  {!screen.ready && (
+                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 500, fontSize: '0.85rem' }}>
+                      {' '}(на разработке)
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{screen.href}</div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
 

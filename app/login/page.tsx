@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '../../lib/supabase/client';
+import { setStaffSession } from '../../lib/auth/staffSession';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,6 +18,17 @@ export default function LoginPage() {
     setErrorMsg(null);
     setIsLoading(true);
 
+    // Итоговая роль: если ввели admin-адрес, считаем администратором
+    const effectiveRole: 'ADMIN' | 'MANAGER' =
+      email.includes('admin') || role === 'ADMIN' ? 'ADMIN' : 'MANAGER';
+
+    // Блок 2, пункт 5 (вариант A): временный маркер роли для служебной навигации
+    // (`components/StaffTopNav.tsx`). В группе D заменяется на роль из сессии Supabase.
+    const redirectByRole = () => {
+      setStaffSession({ role: effectiveRole, email: email || undefined });
+      router.push(effectiveRole === 'ADMIN' ? '/admin/dashboard' : '/manager/crm');
+    };
+
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -26,29 +38,16 @@ export default function LoginPage() {
 
       if (error) {
         // Локальный режим/демо вход для первого запуска если СУБД не подключена
-        if (email.includes('admin') || role === 'ADMIN') {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/manager/crm');
-        }
+        redirectByRole();
         return;
       }
 
       if (data.session) {
-        // Успешный вход через Supabase Auth -> Перенаправление по роли
-        if (role === 'ADMIN') {
-          router.push('/admin/dashboard');
-        } else {
-          router.push('/manager/crm');
-        }
+        redirectByRole();
       }
     } catch (err: any) {
       // Резервный переход при разработке
-      if (role === 'ADMIN') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push('/manager/crm');
-      }
+      redirectByRole();
     } finally {
       setIsLoading(false);
     }

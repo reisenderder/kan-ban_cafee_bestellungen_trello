@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { StaffTopNav } from '../../../components/StaffTopNav';
 
 export interface KitchenItem {
   name: string;
@@ -125,6 +126,8 @@ export default function KitchenDashboardPage() {
 
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px 16px', minHeight: '100vh' }}>
+      <StaffTopNav current="kitchen" />
+
       {/* Top Bar */}
       <div
         style={{

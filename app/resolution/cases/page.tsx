@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { DiscountResaleModal } from '../../../components/DiscountResaleModal';
+import { StaffTopNav } from '../../../components/StaffTopNav';
 
 interface ResolutionCaseItem {
   id: string;
@@ -107,6 +108,8 @@ export default function ResolutionDashboardPage() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+      <StaffTopNav current="resolution" />
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>
