@@ -323,7 +323,11 @@ export function subscribeToOrdersRealtime(onChange: () => void): () => void {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
           onChange();
         })
-        .subscribe();
+        .subscribe((status, err) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            console.warn('[orders-realtime]', status, err?.message ?? '', 'role:', (session?.user?.app_metadata as Record<string, unknown> | undefined)?.role ?? 'нет сессии');
+          }
+        });
     } catch (err) {
       // Realtime недоступен — CRM продолжает работать по ручному обновлению
     }

@@ -127,7 +127,7 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   SELECT EXISTS (SELECT 1 FROM public.employee_profiles WHERE id = auth.uid() AND status = 'ACTIVE');
 $$;
 
--- 7. Row Level Security (Блок 2, группа D, миграции 00012 + 00013 + фикс 00014)
+-- 7. Row Level Security (Блок 2, группа D, миграции 00012 + 00013 + фиксы 00014, 00015)
 -- ВКЛЮЧЕНА со строгими политиками. Принцип default deny (Technical_Access_Audit.md §17).
 --
 --   employee_profiles   — RLS вкл.: сотрудник читает свою строку, ADMIN — все;
@@ -135,7 +135,9 @@ $$;
 --   dishes              — RLS вкл.: SELECT всем (anon+authenticated); изменения только ADMIN.
 --   orders              — RLS вкл.: витрина создаёт заказ ТОЛЬКО через RPC create_client_order
 --                         (SECURITY DEFINER; прямой анонимный INSERT удалён в 00014);
---                         SELECT/UPDATE только MANAGER/ADMIN; клиент читает свой заказ
+--                         SELECT — по роли из JWT (MANAGER/ADMIN), упрощено в 00015 ради
+--                         совместимости с Realtime; UPDATE — MANAGER/ADMIN + is_active_employee();
+--                         клиент читает свой заказ
 --                         через RPC get_order_by_access (SECURITY DEFINER — обходит RLS).
 --   order_chat_messages — RLS вкл., НО SELECT/INSERT открыты anon (осознанный компромисс
 --                         Блока 2: клиент не залогинен, только «номер+код»; Realtime
