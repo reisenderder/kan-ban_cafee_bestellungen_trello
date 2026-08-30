@@ -27,119 +27,38 @@ export function Navbar() {
           boxShadow: 'var(--shadow-sm)',
         }}
       >
-        <div
-          style={{
-            maxWidth: '1200px',
-            margin: '0 auto',
-            padding: '14px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
+        <div className="site-nav__inner">
           {/* Logo & Brand */}
-          <a
-            href="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              textDecoration: 'none',
-            }}
-          >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '12px',
-                backgroundColor: 'var(--color-deep-forest)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#FFF',
-                fontWeight: 'bold',
-                fontSize: '1.25rem',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-            >
-              D
-            </div>
-            <span
-              style={{
-                fontFamily: 'Outfit',
-                fontWeight: 700,
-                fontSize: '1.4rem',
-                color: 'var(--color-deep-forest)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              DAYMOHKCOFEE
-            </span>
+          <a href="/" className="site-nav__brand">
+            <div className="site-nav__logo">D</div>
+            <span className="site-nav__brand-name">DAYMOHKCOFEE</span>
           </a>
 
-          {/* Navigation & Sticky Cart */}
-          <nav style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <a
-              href="#menu"
-              style={{
-                color: 'var(--color-text-primary)',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-              }}
-            >
+          {/* Разделы + корзина. «Служебный вход» убран с витрины (Блок 2, пункт 8). */}
+          <nav className="site-nav__actions">
+            <a href="/#menu" className="site-nav__link">
               Витрина
             </a>
 
             <button
+              type="button"
               onClick={() => setIsMyOrdersOpen(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--color-text-primary)',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                padding: 0,
-              }}
+              className="site-nav__link"
             >
-              📦 Мои заказы
+              📦 <span>Мои заказы</span>
             </button>
 
-            {/* Блок 2, пункт 8: «Служебный вход» убран с витрины — вход персонала
-                по непубличному пути /login без ссылок отсюда (Technical_Access_Audit.md §18 п.9).
-                Клиентская кнопка «Мои заказы» — выше (пункт 7). */}
-
             <button
+              type="button"
               onClick={() => setIsCartOpen(true)}
-              className="btn-primary"
-              style={{
-                padding: '10px 20px',
-                fontSize: '0.95rem',
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                backgroundColor: 'var(--color-warm-terracotta)',
-                boxShadow: 'var(--shadow-sm)',
-              }}
-              title="Нажмите чтобы открыть корзину"
+              className="site-nav__cart"
+              title="Открыть корзину"
+              aria-label={`Корзина${totalItemsCount > 0 ? `, позиций: ${totalItemsCount}` : ''}`}
             >
-              🛒 Корзина
+              <span aria-hidden="true">🛒</span>
+              <span className="site-nav__cart-label">Корзина</span>
               {totalItemsCount > 0 && (
-                <span
-                  key={totalItemsCount}
-                  className="animate-fade-in"
-                  style={{
-                    backgroundColor: 'var(--color-marigold-zest)',
-                    color: 'var(--color-deep-forest)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '2px 10px',
-                    fontSize: '0.8rem',
-                    fontWeight: 800,
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                  }}
-                >
+                <span key={totalItemsCount} className="site-nav__cart-count animate-fade-in">
                   {totalItemsCount}
                 </span>
               )}
@@ -148,7 +67,7 @@ export function Navbar() {
         </div>
       </header>
 
-      {/* Floating Bottom Quick-Cart Bar for mobile/desktop when scrolling - Hidden when Cart is open */}
+      {/* Плавающая нижняя кнопка корзины при непустой корзине */}
       {totalItemsCount > 0 && !isCartOpen && (
         <div
           className="animate-fade-in"

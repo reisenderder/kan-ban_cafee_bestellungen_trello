@@ -49,24 +49,13 @@ export default function HomePage() {
     : dishes.filter((d) => d.category === selectedCategory);
 
   return (
-    <div className="animate-fade-in" style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 24px' }}>
+    <div className="animate-fade-in storefront">
       {/* Hero Banner */}
-      <section style={{
-        background: 'linear-gradient(135deg, var(--color-deep-forest) 0%, #2A523D 100%)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '60px 40px',
-        color: 'var(--color-vanilla-cream)',
-        marginBottom: '50px',
-        boxShadow: 'var(--shadow-lg)',
-        position: 'relative',
-        overflow: 'hidden'
-      }}>
-        <div style={{ maxWidth: '600px', position: 'relative', zIndex: 2 }}>
-          <span className="badge badge-marigold" style={{ marginBottom: '16px' }}>Кавказское кафе в Каире</span>
-          <h1 style={{ color: 'var(--color-vanilla-cream)', fontSize: '3rem', lineHeight: '1.15', marginBottom: '16px' }}>
-            DAYMOHKCOFEE
-          </h1>
-          <p style={{ color: 'rgba(249, 245, 236, 0.85)', fontSize: '1.1rem', marginBottom: '28px' }}>
+      <section className="storefront__hero">
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <span className="badge badge-marigold" style={{ marginBottom: '16px', display: 'inline-block' }}>Кавказское кафе в Каире</span>
+          <h1>DAYMOHKCOFEE</h1>
+          <p>
             Традиционные блюда со свежими ингредиентами и быстрой доставкой по Каиру. Все новинки обновляются в режиме онлайн.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
@@ -79,34 +68,22 @@ export default function HomePage() {
 
       {/* Menu Categories */}
       <section id="menu" style={{ marginBottom: '40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px' }}>
-          <div>
-            <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Публичное Меню</h2>
-            <p style={{ color: 'var(--color-text-secondary)' }}>
-              Кликните на любое блюдо для просмотра подробного состава ингредиентов | Живое обновление онлайн
-            </p>
-          </div>
+        <div style={{ marginBottom: '24px' }}>
+          <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, 2rem)', marginBottom: '8px' }}>Публичное Меню</h2>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.95rem' }}>
+            Кликните на любое блюдо для просмотра подробного состава ингредиентов | Живое обновление онлайн
+          </p>
         </div>
 
         {/* Dynamic Category Filter */}
-        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '12px', marginBottom: '32px' }}>
+        <div className="menu-cats">
           {categories.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                style={{
-                  padding: '10px 20px',
-                  borderRadius: 'var(--radius-full)',
-                  border: isSelected ? 'none' : '1px solid var(--color-border)',
-                  backgroundColor: isSelected ? 'var(--color-deep-forest)' : 'var(--color-surface)',
-                  color: isSelected ? 'var(--color-vanilla-cream)' : 'var(--color-text-primary)',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'var(--transition-fast)'
-                }}
+                className={`menu-cats__chip${isSelected ? ' menu-cats__chip--active' : ''}`}
               >
                 {cat}
               </button>
@@ -120,11 +97,7 @@ export default function HomePage() {
             ⏳ Синхронизация меню с базой данных Supabase...
           </div>
         ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '24px'
-          }}>
+          <div className="menu-grid">
             {filteredDishes.map((dish) => {
               const cartItem = items.find((i) => i.id === dish.id);
               const quantityInCart = cartItem ? cartItem.quantity : 0;
@@ -143,13 +116,12 @@ export default function HomePage() {
                 >
                   {/* Dish Photo Banner */}
                   <div
+                    className="menu-grid__photo"
                     onClick={() => setSelectedDishForModal(dish)}
-                    style={{ position: 'relative', height: '180px', cursor: 'pointer', backgroundColor: '#E2E8F0' }}
                   >
                     <img
                       src={dish.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80'}
                       alt={dish.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
                     {dish.badge && (
                       <span
@@ -186,16 +158,14 @@ export default function HomePage() {
                   </div>
 
                   {/* Body Content */}
-                  <div style={{ padding: '20px', flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div className="menu-grid__body" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div onClick={() => setSelectedDishForModal(dish)} style={{ cursor: 'pointer' }}>
-                      <h3 style={{ fontSize: '1.2rem', marginBottom: '8px', fontWeight: 800 }}>{dish.title}</h3>
-                      <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.4, minHeight: '50px' }}>
-                        {dish.description}
-                      </p>
+                      <h3 className="menu-grid__title">{dish.title}</h3>
+                      <p className="menu-grid__desc">{dish.description}</p>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--color-border)' }}>
-                      <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '1.3rem', color: 'var(--color-deep-forest)' }}>
+                    <div className="menu-grid__buy">
+                      <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-deep-forest)' }}>
                         {dish.price} EGP
                       </span>
 
