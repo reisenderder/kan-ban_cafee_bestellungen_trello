@@ -1,62 +1,22 @@
 /**
- * Блок 2, пункт 5 — источник роли для служебной навигации (`components/StaffTopNav.tsx`).
+ * Блок 2, группа D (пункт 8) — роль вошедшего сотрудника и таблица служебных экранов.
  *
- * ВРЕМЕННОЕ РЕШЕНИЕ (вариант A плана). Настоящий вход через Supabase Auth появляется
- * в группе D — тогда роль будет читаться из `app_metadata` JWT
- * (`auth.jwt() -> 'app_metadata' ->> 'role'`), а этот модуль либо удаляется, либо
- * оборачивает реальную сессию. Сейчас роль кладёт в localStorage временно
- * доработанный экран входа (`app/login/page.tsx`).
+ * Роль берётся из НАСТОЯЩЕЙ сессии Supabase Auth: `app_metadata.role` в JWT
+ * (ставится только service-role ключом — панель Supabase или `scripts/create-staff-users.mjs`).
+ * Ранее (группа C) роль лежала во временном маркере localStorage `daymohk_staff_session`,
+ * который ставил экран входа; этот маркер и `FALLBACK_NAV_ROLE` удалены.
  *
- * Пока настоящей проверки нет, метку можно подставить руками через devtools — это
- * осознанный компромисс: guard страниц (`middleware.ts`) и RLS восстанавливаются
- * в группе D. Навигационный доступ к экрану всё равно не расширяет права на данные —
- * маскирование и контекст на каждом экране сохраняются
- * (specs/04_technical_specs/Technical_Access_Audit.md §4–§5).
+ * Guard страниц кабинетов — `middleware.ts` (нет сессии или `status != 'ACTIVE'` →
+ * редирект на вход). Навигационный доступ к экрану не расширяет прав на данные:
+ * маскирование и RLS (`supabase/migrations/00013_rls_policies.sql`) сохраняются
+ * (specs/04_technical_specs/Technical_Access_Audit.md §4–§5, §17).
  */
+
+import { createClient } from '../supabase/client';
 
 export type StaffRole = 'ADMIN' | 'MANAGER' | 'KITCHEN' | 'COURIER' | 'RESOLUTION_OFFICER';
 
-export interface StaffSession {
-  role: StaffRole;
-  email?: string;
-}
-
-const STAFF_SESSION_KEY = 'daymohk_staff_session';
-
-export function getStaffSession(): StaffSession | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = window.localStorage.getItem(STAFF_SESSION_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<StaffSession>;
-    if (parsed && isStaffRole(parsed.role)) {
-      return { role: parsed.role, email: typeof parsed.email === 'string' ? parsed.email : undefined };
-    }
-  } catch {
-    /* повреждённое значение — считаем, что сессии нет */
-  }
-  return null;
-}
-
-export function setStaffSession(session: StaffSession): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(session));
-  } catch {
-    /* приватный режим / переполнение — навигация просто откатится на дефолт */
-  }
-}
-
-export function clearStaffSession(): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(STAFF_SESSION_KEY);
-  } catch {
-    /* no-op */
-  }
-}
-
-function isStaffRole(value: unknown): value is StaffRole {
+export function isStaffRole(value: unknown): value is StaffRole {
   return (
     value === 'ADMIN' ||
     value === 'MANAGER' ||
@@ -64,6 +24,32 @@ function isStaffRole(value: unknown): value is StaffRole {
     value === 'COURIER' ||
     value === 'RESOLUTION_OFFICER'
   );
+}
+
+/**
+ * Роль текущего вошедшего сотрудника или `null`, если сессии нет.
+ * Читается на клиенте из проверенной сессии Supabase (`getUser` сверяет JWT с сервером).
+ */
+export async function getStaffRole(): Promise<StaffRole | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) return null;
+    const role = (data.user.app_metadata as Record<string, unknown> | undefined)?.role;
+    return isStaffRole(role) ? role : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Выход сотрудника: снимает сессию Supabase (куки чистятся автоматически). */
+export async function signOutStaff(): Promise<void> {
+  try {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  } catch {
+    /* сеть недоступна — сессия всё равно истечёт по сроку JWT */
+  }
 }
 
 /** Ключ служебного экрана — используется и в навигации, и на самих страницах. */
@@ -113,10 +99,19 @@ export function screensForRole(role: StaffRole): StaffScreen[] {
   }
 }
 
-/**
- * Роль, из которой строится навигация, когда маркера сессии нет (зашли на экран
- * напрямую). По плану — «как для админа + менеджера», то есть самый широкий набор,
- * чтобы никто не застрял без навигации. В группе D это заменяется на редирект
- * неаутентифицированного пользователя на страницу входа.
- */
-export const FALLBACK_NAV_ROLE: StaffRole = 'ADMIN';
+/** Стартовый экран роли после входа. */
+export function homeScreenForRole(role: StaffRole): string {
+  switch (role) {
+    case 'ADMIN':
+      return '/admin/dashboard';
+    case 'KITCHEN':
+      return '/kitchen/dashboard';
+    case 'COURIER':
+      return '/courier/dashboard';
+    case 'RESOLUTION_OFFICER':
+      return '/resolution/cases';
+    case 'MANAGER':
+    default:
+      return '/manager/crm';
+  }
+}

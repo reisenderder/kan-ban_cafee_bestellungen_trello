@@ -106,17 +106,9 @@ export function Navbar() {
               📦 Мои заказы
             </button>
 
-            <a
-              href="/login"
-              style={{
-                color: 'var(--color-text-secondary)',
-                textDecoration: 'none',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-              }}
-            >
-              🔑 Служебный вход
-            </a>
+            {/* Блок 2, пункт 8: «Служебный вход» убран с витрины — вход персонала
+                по непубличному пути /login без ссылок отсюда (Technical_Access_Audit.md §18 п.9).
+                Клиентская кнопка «Мои заказы» — выше (пункт 7). */}
 
             <button
               onClick={() => setIsCartOpen(true)}

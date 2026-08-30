@@ -8,12 +8,10 @@
  * же экране переходов не видит. Таблица ролей — в `lib/auth/staffSession.ts`
  * (`screensForRole`), спека `Feature_Admin_Control.md` §17 п.7.
  *
- * В Блоке 2 реально активны только роли ADMIN и MANAGER (учётки KITCHEN / COURIER /
- * RESOLUTION_OFFICER не выдаются — пункт 8). Компонент написан сразу с полной
- * таблицей, чтобы будущие блоки его не переписывали.
- *
- * Кнопка «← Назад» присутствует всегда. Роль сейчас берётся из временного маркера
- * localStorage; в группе D — из сессии Supabase Auth.
+ * Группа D (пункт 8): роль берётся из НАСТОЯЩЕЙ сессии Supabase Auth
+ * (`app_metadata.role`), а не из временного маркера localStorage. Guard страниц —
+ * `middleware.ts`: без сессии на служебную страницу не попасть, поэтому «гостевого»
+ * состояния здесь больше нет. Кнопка «Выход» снимает сессию Supabase.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -21,10 +19,9 @@ import { useRouter } from 'next/navigation';
 import {
   StaffScreenKey,
   StaffRole,
-  getStaffSession,
-  clearStaffSession,
+  getStaffRole,
+  signOutStaff,
   screensForRole,
-  FALLBACK_NAV_ROLE,
 } from '../lib/auth/staffSession';
 
 interface StaffTopNavProps {
@@ -44,12 +41,15 @@ export function StaffTopNav({ current }: StaffTopNavProps) {
   const router = useRouter();
   // Роль читаем на клиенте после монтирования, чтобы не разошёлся SSR-рендер.
   const [role, setRole] = useState<StaffRole | null>(null);
-  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    const session = getStaffSession();
-    setRole(session?.role ?? FALLBACK_NAV_ROLE);
-    setHasSession(!!session);
+    let cancelled = false;
+    getStaffRole().then((r) => {
+      if (!cancelled) setRole(r);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleBack = () => {
@@ -60,9 +60,10 @@ export function StaffTopNav({ current }: StaffTopNavProps) {
     }
   };
 
-  const handleLogout = () => {
-    clearStaffSession();
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOutStaff();
+    router.replace('/login');
+    router.refresh();
   };
 
   const screens = role ? screensForRole(role) : [];
@@ -84,11 +85,7 @@ export function StaffTopNav({ current }: StaffTopNavProps) {
       </div>
 
       <div className="staff-topnav__meta">
-        {role && (
-          <span className="staff-topnav__role" title={hasSession ? undefined : 'Маркер сессии не найден — показан полный набор экранов'}>
-            {hasSession ? ROLE_LABEL[role] : 'Гость'}
-          </span>
-        )}
+        {role && <span className="staff-topnav__role">{ROLE_LABEL[role]}</span>}
         <button type="button" onClick={handleLogout} className="staff-topnav__logout">
           Выход
         </button>
