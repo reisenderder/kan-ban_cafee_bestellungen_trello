@@ -60,6 +60,30 @@
 ##### 🗄️ [DATABASE]
 * Миграции для группы C не требуются.
 
+#### Группа D — настоящий вход персонала + guard + RLS (пункты 8, 9)
+
+Решения заказчика (2026-08-30): путь входа остаётся `/login` (скрыт из индексации, без ссылок с витрины); учётки — обычные email + пароль (без Google/Apple), заводит владелец сам; восстановление пароля — из панели Supabase, отдельной страницы «Забыли пароль?» в Блоке 2 нет; guard закрывает все пять служебных разделов; чат клиента по заказу пока не закрывается (осознанный компромисс); два коммита на группу.
+
+##### 🛡️ [SECURITY]
+* **Настоящий вход персонала через Supabase Auth** (пункт 8): [`app/login/LoginForm.tsx`](../app/login/LoginForm.tsx) (+ серверная обёртка [`app/login/page.tsx`](../app/login/page.tsx) с Suspense, [`app/login/layout.tsx`](../app/login/layout.tsx) с `robots noindex`) — только email + пароль через `supabase.auth.signInWithPassword`, внятные сообщения об ошибке, редирект по роли. Убраны прежняя вкладка выбора роли, временный маркер `daymohk_staff_session` и «демо-редирект по любому вводу». Роль берётся из `app_metadata.role` учётной записи.
+* **Guard служебных страниц** (пункт 8): новый [`middleware.ts`](../middleware.ts) + [`lib/supabase/middleware.ts`](../lib/supabase/middleware.ts) закрывают `/admin`, `/manager`, `/kitchen`, `/courier`, `/resolution`. Нет сессии → `/login?redirectTo=…`; `employee_profiles.status != 'ACTIVE'` → `/login?error=suspended`; нет роли → `/login?error=norole`; раздел `/admin` при роли не-ADMIN → редирект в `/manager/crm`. Если Supabase не сконфигурирован (локальная разработка без `.env.local`) — guard пропускает всё, чтобы не мешать разработке и headless-QA; на Production (переменные заданы) guard активен полностью.
+* **Роль в навигации — из настоящей сессии**: [`lib/auth/staffSession.ts`](../lib/auth/staffSession.ts) переписан — `getStaffRole()` читает `app_metadata.role` из проверенной сессии Supabase (`getUser`), `signOutStaff()` снимает сессию. Удалены `getStaffSession`/`setStaffSession`/`clearStaffSession`/`FALLBACK_NAV_ROLE` (localStorage-маркер группы C). [`components/StaffTopNav.tsx`](../components/StaffTopNav.tsx) обновлён; кнопка «Выход» вызывает `signOut`. Без сессии полоска показывает только «← Назад» и «Выход» (в норме до неё не дойти — раньше отрабатывает middleware).
+* **«Служебный вход» убран с витрины** (пункт 8): из [`components/Navbar.tsx`](../components/Navbar.tsx) удалена ссылка «🔑 Служебный вход» (`Technical_Access_Audit.md` §18 п.9). Клиентская кнопка «📦 Мои заказы» была добавлена в группе B.
+* **Скрипт заведения учёток**: [`scripts/create-staff-users.mjs`](../scripts/create-staff-users.mjs) — владелец запускает локально с `SUPABASE_SERVICE_ROLE_KEY` и парами email/пароль в переменных окружения; создаёт/обновляет пользователей ADMIN и MANAGER с `app_metadata.role`, апсертит строки в `employee_profiles`. Ключи и пароли в репозиторий не попадают.
+
+##### 🚧 [FEATURE]
+* **Баннер отдела урегулирования** (пункт 9): на [`app/resolution/cases/page.tsx`](../app/resolution/cases/page.tsx) добавлен заметный баннер «🚧 Раздел в разработке — данные демонстрационные». Демо-данные и кнопки не тронуты — осознанная ширма. `StaffTopNav` там уже с группы C.
+
+##### 🗄️ [DATABASE] — требуют ручного применения на Production Supabase (порядок: 00010 → 00011 → 00012 → 00013, до деплоя Vercel)
+* [`supabase/migrations/00012_employee_profiles.sql`](../supabase/migrations/00012_employee_profiles.sql) — таблица `public.employee_profiles` (`id`=`auth.users.id`, `role`, `status`), хелперы `get_current_user_role()` / `is_active_employee()` (`SECURITY DEFINER`), RLS для самой таблицы (сотрудник читает свою строку, админ — все; запись только service-role).
+* [`supabase/migrations/00013_rls_policies.sql`](../supabase/migrations/00013_rls_policies.sql) — `default deny` восстановлен на `dishes` / `orders` / `order_chat_messages`. `dishes`: SELECT всем, изменения только ADMIN. `orders`: INSERT анонимно (витрина), SELECT/UPDATE только MANAGER/ADMIN; клиент — через RPC `get_order_by_access` (обходит RLS). `order_chat_messages`: SELECT/INSERT открыты `anon` (Realtime сохраняется), UPDATE только персонал.
+* [`supabase/full_schema.sql`](../supabase/full_schema.sql) синхронизирован.
+
+##### 🛡️ [SECURITY] — открытый долг (после Блока 2)
+* **Изоляция чата клиента по заказу**: `order_chat_messages` по-прежнему читаема/пишется анонимным ключом (id заказов — UUID, но при известном `order_id` переписку видно). Заказчик подтвердил компромисс: полноценная изоляция «одна переписка — своя комната, только клиент + менеджер» вынесена в отдельную будущую задачу (`Technical_Access_Audit.md` §18 п.10 это допускает).
+* **Восстановление пароля из приложения**: страницы «Забыли пароль?» нет; сброс — вручную из панели Supabase. Самостоятельный флоу (`resetPasswordForEmail` + страница нового пароля + настроенный SMTP) — отдельная будущая задача.
+* **Управление сотрудниками из UI администратора**: раздел «Сотрудники» в админке — по-прежнему демо-данные. Настоящее управление — отдельный будущий блок (`Feature_Admin_Control.md` §6).
+
 ---
 
 ### 📌 Версия v1.0.0 — Боевой запуск Блока 1 (25.08.2026)

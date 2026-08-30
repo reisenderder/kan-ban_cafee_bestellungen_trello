@@ -84,16 +84,40 @@ CREATE TABLE IF NOT EXISTS public.order_chat_messages (
 -- В публикацию supabase_realtime включены: orders (00007), dishes (00010, Блок 2 п.3),
 -- order_chat_messages (00008). Это даёт живое обновление между устройствами без F5.
 
--- 6. Row Level Security
--- СОЗНАТЕЛЬНО НЕ ВКЛЮЧЕНА для dishes / orders / order_chat_messages.
--- Причина: у приложения пока нет настоящей аутентификации персонала — витрина,
--- панель администратора и CRM менеджера ходят в БД одним и тем же анонимным
--- ключом, поэтому RLS не может отличить менеджера от постороннего. Если Supabase
--- включил RLS автоматически при создании таблицы через Table Editor, её нужно
--- ОТКЛЮЧИТЬ (Database → Policies → Disable RLS), иначе анонимный ключ не сможет
--- ни писать, ни читать, и всё приложение молча уходит в localStorage-подстраховку.
+-- 6. Профили сотрудников (Блок 2, группа D, миграция 00012)
+CREATE TABLE IF NOT EXISTS public.employee_profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'KITCHEN', 'COURIER', 'RESOLUTION_OFFICER')),
+  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'SUSPENDED')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Хелперы для политик (миграция 00012)
+CREATE OR REPLACE FUNCTION public.get_current_user_role()
+RETURNS text LANGUAGE sql STABLE AS $$
+  SELECT coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '');
+$$;
+
+CREATE OR REPLACE FUNCTION public.is_active_employee()
+RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.employee_profiles WHERE id = auth.uid() AND status = 'ACTIVE');
+$$;
+
+-- 7. Row Level Security (Блок 2, группа D, миграции 00012 + 00013)
+-- ВКЛЮЧЕНА со строгими политиками. Принцип default deny (Technical_Access_Audit.md §17).
 --
--- ДОЛГ ПО БЕЗОПАСНОСТИ: при выключенной RLS данные клиентов (имя, телефон, адрес)
--- читаемы по анонимному ключу. До допуска реальных клиентов нужно завести учётные
--- записи персонала, закрыть страницы кабинетов и вернуть RLS со строгими политиками
--- (клиент — только INSERT заказа/сообщения; чтение заказов — только менеджер).
+--   employee_profiles   — RLS вкл.: сотрудник читает свою строку, ADMIN — все;
+--                         запись только service-role (панель / create-staff-users.mjs).
+--   dishes              — RLS вкл.: SELECT всем (anon+authenticated); изменения только ADMIN.
+--   orders              — RLS вкл.: INSERT анонимно (витрина после OTP);
+--                         SELECT/UPDATE только MANAGER/ADMIN; клиент читает свой заказ
+--                         через RPC get_order_by_access (SECURITY DEFINER — обходит RLS).
+--   order_chat_messages — RLS вкл., НО SELECT/INSERT открыты anon (осознанный компромисс
+--                         Блока 2: клиент не залогинен, только «номер+код»; Realtime
+--                         сохраняется). UPDATE (отметка «прочитано») — только персонал.
+--
+-- ДОЛГ ПО БЕЗОПАСНОСТИ (после Блока 2): изоляция чата клиента по заказу —
+-- сейчас переписка читаема анонимным ключом при известном order_id. Полная изоляция
+-- «одна переписка — своя комната» вынесена в отдельную будущую задачу.
+--
+-- Точные политики — в supabase/migrations/00012_employee_profiles.sql и 00013_rls_policies.sql.
