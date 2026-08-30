@@ -85,6 +85,12 @@
 * **Восстановление пароля из приложения**: страницы «Забыли пароль?» нет; сброс — вручную из панели Supabase. Самостоятельный флоу (`resetPasswordForEmail` + страница нового пароля + настроенный SMTP) — отдельная будущая задача.
 * **Управление сотрудниками из UI администратора**: раздел «Сотрудники» в админке — по-прежнему демо-данные. Настоящее управление — отдельный будущий блок (`Feature_Admin_Control.md` §6).
 
+#### Фикс — создание заказа после включения RLS на Production (2026-08-30)
+
+##### 🗄️ [DATABASE] + 🍳 [KITCHEN/CRM]
+* **Заказ с витрины не долетал до менеджера после включения RLS**. Причина: `createOrderInSupabase` делал `INSERT ... RETURNING` (`.select()` в supabase-js), а у анонимного ключа после `00013` нет (и не должно быть) права SELECT на `orders` — PostgREST не мог вернуть строку и **откатывал всю вставку**. Заказ оседал только в `localStorage` устройства с фиктивным `id` (`order-<timestamp>`), из-за чего потом и чат заказа падал с `400` (нельзя привести `order-...` к `uuid`).
+* **Решение**: новая функция [`supabase/migrations/00014_create_client_order_rpc.sql`](../supabase/migrations/00014_create_client_order_rpc.sql) — RPC `public.create_client_order(...)` (`SECURITY DEFINER`, обходит RLS), возвращает настоящий UUID заказа. Витрина ([`lib/orders/orders.ts`](../lib/orders/orders.ts)) создаёт заказ только через эту RPC; прямая анонимная вставка убрана, политика `orders_anon_insert` удалена. Требует ручного применения на Production Supabase (после `00013`). Синхронизировано в [`supabase/full_schema.sql`](../supabase/full_schema.sql).
+
 ---
 
 ### 📌 Версия v1.0.0 — Боевой запуск Блока 1 (25.08.2026)

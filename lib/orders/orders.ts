@@ -159,23 +159,22 @@ export async function createOrderInSupabase(input: {
 
   try {
     const supabase = createClient();
-    const { data, error } = await supabase
-      .from('orders')
-      .insert({
-        order_number: order.orderNumber,
-        customer_name: order.customerName,
-        customer_phone: order.customerPhone,
-        address: order.address,
-        status: order.status,
-        items: order.items,
-        total_amount: order.totalAmount,
-        chat_access_code_hash: chatAccessCodeHash,
-      })
-      .select()
-      .single();
+    // Создаём заказ через RPC create_client_order (SECURITY DEFINER): после включения
+    // RLS у анонимного ключа нет и не должно быть SELECT на orders, а прямой
+    // INSERT ... RETURNING в этом случае откатывается PostgREST целиком.
+    const { data, error } = await supabase.rpc('create_client_order', {
+      p_order_number: order.orderNumber,
+      p_customer_name: order.customerName,
+      p_customer_phone: order.customerPhone,
+      p_address: order.address,
+      p_items: order.items,
+      p_total_amount: order.totalAmount,
+      p_chat_access_code_hash: chatAccessCodeHash,
+    });
 
-    if (!error && data) {
-      order.id = data.id;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!error && row?.id) {
+      order.id = row.id;
       const updated = getStoredOrders().map((o) =>
         o.orderNumber === order.orderNumber ? order : o
       );

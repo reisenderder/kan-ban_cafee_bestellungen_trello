@@ -71,6 +71,29 @@ LANGUAGE sql SECURITY DEFINER SET search_path = public, extensions AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.get_order_by_access(TEXT, TEXT) TO anon, authenticated;
 
+-- Блок 2 (фикс после RLS, миграция 00014): создание заказа клиентом через RPC.
+-- После включения RLS у anon нет SELECT на orders, поэтому прямой INSERT ... RETURNING
+-- откатывается — витрина создаёт заказ только через эту SECURITY DEFINER функцию.
+CREATE OR REPLACE FUNCTION public.create_client_order(
+  p_order_number TEXT, p_customer_name TEXT, p_customer_phone TEXT, p_address TEXT,
+  p_items JSONB, p_total_amount NUMERIC, p_chat_access_code_hash TEXT
+)
+RETURNS TABLE (id UUID, order_number TEXT, status public.order_status, created_at TIMESTAMPTZ)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  RETURN QUERY
+  INSERT INTO public.orders (
+    order_number, customer_name, customer_phone, address,
+    status, items, total_amount, chat_access_code_hash
+  ) VALUES (
+    p_order_number, p_customer_name, p_customer_phone, p_address,
+    'NEW', coalesce(p_items, '[]'::jsonb), p_total_amount, p_chat_access_code_hash
+  )
+  RETURNING orders.id, orders.order_number, orders.status, orders.created_at;
+END;
+$$;
+GRANT EXECUTE ON FUNCTION public.create_client_order(TEXT, TEXT, TEXT, TEXT, JSONB, NUMERIC, TEXT) TO anon, authenticated;
+
 -- 5. Таблица переписки клиента и менеджера по заказу (Order Chat Messages)
 CREATE TABLE IF NOT EXISTS public.order_chat_messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -104,13 +127,14 @@ RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   SELECT EXISTS (SELECT 1 FROM public.employee_profiles WHERE id = auth.uid() AND status = 'ACTIVE');
 $$;
 
--- 7. Row Level Security (Блок 2, группа D, миграции 00012 + 00013)
+-- 7. Row Level Security (Блок 2, группа D, миграции 00012 + 00013 + фикс 00014)
 -- ВКЛЮЧЕНА со строгими политиками. Принцип default deny (Technical_Access_Audit.md §17).
 --
 --   employee_profiles   — RLS вкл.: сотрудник читает свою строку, ADMIN — все;
 --                         запись только service-role (панель / create-staff-users.mjs).
 --   dishes              — RLS вкл.: SELECT всем (anon+authenticated); изменения только ADMIN.
---   orders              — RLS вкл.: INSERT анонимно (витрина после OTP);
+--   orders              — RLS вкл.: витрина создаёт заказ ТОЛЬКО через RPC create_client_order
+--                         (SECURITY DEFINER; прямой анонимный INSERT удалён в 00014);
 --                         SELECT/UPDATE только MANAGER/ADMIN; клиент читает свой заказ
 --                         через RPC get_order_by_access (SECURITY DEFINER — обходит RLS).
 --   order_chat_messages — RLS вкл., НО SELECT/INSERT открыты anon (осознанный компромисс
