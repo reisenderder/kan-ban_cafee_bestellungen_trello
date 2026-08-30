@@ -60,7 +60,8 @@ RETURNS TABLE (
   id UUID, order_number TEXT, status public.order_status,
   items JSONB, total_amount NUMERIC, created_at TIMESTAMPTZ
 )
-LANGUAGE sql SECURITY DEFINER SET search_path = public AS $$
+-- search_path включает extensions: pgcrypto (digest) на Supabase — в схеме extensions.
+LANGUAGE sql SECURITY DEFINER SET search_path = public, extensions AS $$
   SELECT o.id, o.order_number, o.status, o.items, o.total_amount, o.created_at
   FROM public.orders o
   WHERE o.order_number = p_order_number

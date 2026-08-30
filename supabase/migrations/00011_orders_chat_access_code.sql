@@ -11,6 +11,9 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 ALTER TABLE public.orders
   ADD COLUMN IF NOT EXISTS chat_access_code_hash TEXT;
 
+-- search_path включает extensions: на Supabase pgcrypto (функция digest) живёт
+-- в схеме `extensions`, а не в `public`. Без этого CREATE FUNCTION падает с
+-- «function digest(text, unknown) does not exist».
 CREATE OR REPLACE FUNCTION public.get_order_by_access(p_order_number TEXT, p_code TEXT)
 RETURNS TABLE (
   id UUID,
@@ -22,7 +25,7 @@ RETURNS TABLE (
 )
 LANGUAGE sql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
   SELECT o.id, o.order_number, o.status, o.items, o.total_amount, o.created_at
   FROM public.orders o
