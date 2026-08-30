@@ -296,22 +296,41 @@ export async function updateOrderStatusInSupabase(
 
 /**
  * Подписка на Supabase Realtime: уведомляет CRM о новых заказах и изменениях статуса
- * с любого устройства клиента без перезагрузки страницы менеджера
+ * с любого устройства клиента без перезагрузки страницы менеджера.
+ *
+ * После включения RLS таблица orders закрыта политикой orders_staff_select —
+ * Realtime отдаёт события по ней только соединению, авторизованному токеном
+ * вошедшего менеджера/админа. Поэтому перед подпиской явно передаём в сокет
+ * access_token текущей сессии (иначе события молча не приходят, и заказ
+ * появляется в CRM только после ручного обновления страницы).
  */
 export function subscribeToOrdersRealtime(onChange: () => void): () => void {
-  try {
-    const supabase = createClient();
-    const channel = supabase
-      .channel('orders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        onChange();
-      })
-      .subscribe();
+  const supabase = createClient();
+  let channel: ReturnType<typeof supabase.channel> | null = null;
+  let cancelled = false;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  } catch (err) {
-    return () => {};
-  }
+  (async () => {
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (session?.access_token) {
+        await supabase.realtime.setAuth(session.access_token);
+      }
+      channel = supabase
+        .channel('orders-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+          onChange();
+        })
+        .subscribe();
+    } catch (err) {
+      // Realtime недоступен — CRM продолжает работать по ручному обновлению
+    }
+  })();
+
+  return () => {
+    cancelled = true;
+    if (channel) supabase.removeChannel(channel);
+  };
 }
