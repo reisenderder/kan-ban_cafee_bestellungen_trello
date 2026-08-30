@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useCart } from '../context/CartContext';
 import { fetchAvailableDishes, Dish, defaultDishes, fetchCategories, subscribeToMenuUpdates, subscribeToDishesRealtime } from '../lib/menu/dishes';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export default function HomePage() {
   const { items, addItem, updateQuantity } = useCart();
@@ -11,6 +13,8 @@ export default function HomePage() {
   const [categories, setCategories] = useState<string[]>(['Все', ...fetchCategories()]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedDishForModal, setSelectedDishForModal] = useState<Dish | null>(null);
+
+  useBodyScrollLock(!!selectedDishForModal);
 
   const reloadMenuData = async () => {
     setIsLoading(true);
@@ -257,8 +261,13 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* DETAILED DISH INSPECTION MODAL */}
-      {selectedDishForModal && (
+      {/* DETAILED DISH INSPECTION MODAL — рендерим порталом в <body>.
+          На корне страницы висит .animate-fade-in с постоянным transform
+          (animation-fill-mode: forwards), а любой transform у предка
+          превращает position: fixed в позиционирование относительно этого
+          предка. Без портала окно «уезжало» в середину списка вместо
+          центра экрана — особенно заметно при прокрутке на телефоне. */}
+      {selectedDishForModal && typeof document !== 'undefined' && createPortal(
         <div
           style={{
             position: 'fixed',
@@ -269,6 +278,8 @@ export default function HomePage() {
             alignItems: 'center',
             justifyContent: 'center',
             padding: '20px',
+            overflowY: 'auto',
+            overscrollBehavior: 'contain',
           }}
         >
           <div
@@ -280,7 +291,7 @@ export default function HomePage() {
               borderRadius: 'var(--radius-lg)',
               overflow: 'hidden',
               boxShadow: 'var(--shadow-lg)',
-              maxHeight: '90vh',
+              maxHeight: 'calc(100dvh - 40px)',
               display: 'flex',
               flexDirection: 'column',
             }}
@@ -381,7 +392,8 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
