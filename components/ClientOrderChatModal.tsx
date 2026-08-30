@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChatMessage, fetchChatMessages, sendChatMessage, subscribeToChatRealtime } from '../lib/orders/chat';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface ClientOrderChatModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export function ClientOrderChatModal({
 }: ClientOrderChatModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen || !orderId) return;
@@ -64,6 +67,8 @@ export function ClientOrderChatModal({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
       }}
     >
       <div
@@ -71,7 +76,7 @@ export function ClientOrderChatModal({
         style={{
           width: '100%',
           maxWidth: '440px',
-          height: '520px',
+          height: 'min(520px, calc(100dvh - 32px))',
           backgroundColor: 'var(--color-surface)',
           borderRadius: 'var(--radius-lg)',
           boxShadow: 'var(--shadow-lg)',
@@ -180,10 +185,10 @@ export function ClientOrderChatModal({
             placeholder="Напишите уточнение по заказу..."
             style={{
               flex: 1,
+              minWidth: 0,
               padding: '10px 14px',
               borderRadius: 'var(--radius-full)',
               border: '1px solid var(--color-border)',
-              fontSize: '0.9rem',
             }}
           />
           <button

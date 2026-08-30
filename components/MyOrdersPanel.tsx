@@ -9,6 +9,7 @@ import {
   fetchOrderByNumberAndCode,
   clientStageLabel,
 } from '../lib/orders/orders';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface MyOrdersPanelProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export function MyOrdersPanel({ isOpen, onClose }: MyOrdersPanelProps) {
   const [isLooking, setIsLooking] = useState(false);
   const [foundOrder, setFoundOrder] = useState<Order | null>(null);
   const [chatFor, setChatFor] = useState<{ id: string; orderNumber: string } | null>(null);
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -57,7 +60,6 @@ export function MyOrdersPanel({ isOpen, onClose }: MyOrdersPanelProps) {
     padding: '11px 14px',
     borderRadius: 'var(--radius-sm)',
     border: '1px solid var(--color-border)',
-    fontSize: '0.95rem',
   };
 
   return (
@@ -67,11 +69,13 @@ export function MyOrdersPanel({ isOpen, onClose }: MyOrdersPanelProps) {
         style={{
           position: 'fixed',
           inset: 0,
+          height: '100dvh',
           backgroundColor: 'rgba(0,0,0,0.5)',
           backdropFilter: 'blur(4px)',
           zIndex: 600,
           display: 'flex',
           justifyContent: 'flex-end',
+          overscrollBehavior: 'contain',
           cursor: 'pointer',
         }}
       >
@@ -82,11 +86,13 @@ export function MyOrdersPanel({ isOpen, onClose }: MyOrdersPanelProps) {
             width: '100%',
             maxWidth: '440px',
             backgroundColor: 'var(--color-bg)',
-            height: '100%',
+            height: '100dvh',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: 'var(--shadow-lg)',
             overflowY: 'auto',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
             cursor: 'default',
           }}
         >

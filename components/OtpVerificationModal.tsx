@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface OtpVerificationModalProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export function OtpVerificationModal({
   const [resendCooldown, setResendCooldown] = useState(60);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+
+  useBodyScrollLock(isOpen);
 
   // 60-second resend cooldown timer
   useEffect(() => {
@@ -75,6 +78,8 @@ export function OtpVerificationModal({
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px',
+        overflowY: 'auto',
+        overscrollBehavior: 'contain',
       }}
     >
       <div
