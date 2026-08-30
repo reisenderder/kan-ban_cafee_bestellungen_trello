@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { DeliveryConfirmationModal } from '../../../components/DeliveryConfirmationModal';
+import { StaffTopNav } from '../../../components/StaffTopNav';
 
 interface CourierDelivery {
   id: string;
@@ -39,9 +40,12 @@ export default function CourierDashboardPage() {
 
   if (!delivery) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', textAlign: 'center' }}>
-        <h2 style={{ marginBottom: '12px' }}>Нет назначенных доставок</h2>
-        <p style={{ color: 'var(--color-text-secondary)' }}>Ожидайте назначения заказа менеджером кафе.</p>
+      <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
+        <StaffTopNav current="courier" />
+        <div style={{ textAlign: 'center', padding: '40px 8px' }}>
+          <h2 style={{ marginBottom: '12px' }}>Нет назначенных доставок</h2>
+          <p style={{ color: 'var(--color-text-secondary)' }}>Ожидайте назначения заказа менеджером кафе.</p>
+        </div>
       </div>
     );
   }
@@ -71,6 +75,8 @@ export default function CourierDashboardPage() {
 
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '24px 16px' }}>
+      <StaffTopNav current="courier" />
+
       {/* Mobile Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>

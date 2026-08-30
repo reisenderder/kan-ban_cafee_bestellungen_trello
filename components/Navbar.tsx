@@ -1,12 +1,14 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useCart } from '../context/CartContext';
 import { CartDrawer } from './CartDrawer';
+import { MyOrdersPanel } from './MyOrdersPanel';
 
 export function Navbar() {
   const { items, isCartOpen, setIsCartOpen, totalAmount } = useCart();
   const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const [isMyOrdersOpen, setIsMyOrdersOpen] = useState(false);
 
   return (
     <>
@@ -89,17 +91,24 @@ export function Navbar() {
               Витрина
             </a>
 
-            <a
-              href="/login"
+            <button
+              onClick={() => setIsMyOrdersOpen(true)}
               style={{
-                color: 'var(--color-text-secondary)',
-                textDecoration: 'none',
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-primary)',
                 fontWeight: 600,
-                fontSize: '0.9rem',
+                fontSize: '0.95rem',
+                cursor: 'pointer',
+                padding: 0,
               }}
             >
-              🔑 Служебный вход
-            </a>
+              📦 Мои заказы
+            </button>
+
+            {/* Блок 2, пункт 8: «Служебный вход» убран с витрины — вход персонала
+                по непубличному пути /login без ссылок отсюда (Technical_Access_Audit.md §18 п.9).
+                Клиентская кнопка «Мои заказы» — выше (пункт 7). */}
 
             <button
               onClick={() => setIsCartOpen(true)}
@@ -192,6 +201,7 @@ export function Navbar() {
       )}
 
       <CartDrawer />
+      <MyOrdersPanel isOpen={isMyOrdersOpen} onClose={() => setIsMyOrdersOpen(false)} />
     </>
   );
 }

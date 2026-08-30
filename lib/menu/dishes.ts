@@ -141,6 +141,36 @@ export function subscribeToMenuUpdates(callback: () => void) {
 }
 
 /**
+ * Пункт 3 Блока 2: живое обновление витрины между устройствами.
+ * Подписка на Supabase Realtime по таблице `dishes` — по образцу
+ * subscribeToOrdersRealtime в lib/orders/orders.ts. Публикация/скрытие/изменение/
+ * удаление блюда с одного устройства отражается на витрине другого без F5.
+ * Требует включения таблицы `dishes` в публикацию supabase_realtime
+ * (миграция supabase/migrations/00010_dishes_realtime.sql).
+ */
+export function subscribeToDishesRealtime(onChange: () => void): () => void {
+  try {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('dishes-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'dishes' },
+        () => {
+          onChange();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  } catch (err) {
+    return () => {};
+  }
+}
+
+/**
  * Получить список категорий
  */
 export function fetchCategories(): string[] {
@@ -440,4 +470,30 @@ export async function archiveDishInSupabase(dishId: string): Promise<boolean> {
  */
 export async function restoreDishFromArchiveInSupabase(dishId: string): Promise<boolean> {
   return updateDishInSupabase(dishId, { isArchived: false });
+}
+
+/**
+ * Жёсткое (безвозвратное) удаление блюда. Доступно только для блюда в архиве —
+ * см. specs/03_feature_specs/Feature_Menu_Management.md §13.4. Стирает строку из
+ * Supabase у всех устройств; восстановление невозможно.
+ */
+export async function deleteDishPermanentlyInSupabase(dishId: string): Promise<boolean> {
+  const currentDishes = getStoredDishes();
+  const target = currentDishes.find((d) => d.id === dishId);
+  if (target && !target.isArchived) {
+    // Страховка: жёсткое удаление только из архива
+    return false;
+  }
+
+  saveStoredDishes(currentDishes.filter((d) => d.id !== dishId));
+
+  try {
+    const supabase = createClient();
+    await supabase.from('dishes').delete().eq('id', dishId);
+  } catch (err) {
+    // Supabase недоступен — блюдо удалено локально, синхронизируется при следующем fetch
+  }
+
+  notifyMenuUpdated();
+  return true;
 }

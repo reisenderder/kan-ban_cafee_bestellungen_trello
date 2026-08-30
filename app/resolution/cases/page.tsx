@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { DiscountResaleModal } from '../../../components/DiscountResaleModal';
+import { StaffTopNav } from '../../../components/StaffTopNav';
 
 interface ResolutionCaseItem {
   id: string;
@@ -107,6 +108,27 @@ export default function ResolutionDashboardPage() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 24px' }}>
+      <StaffTopNav current="resolution" />
+
+      {/* Блок 2, пункт 9: раздел — осознанная ширма. Демо-данные и кнопки ниже
+          визуально на месте, но реальных последствий не имеют. */}
+      <div
+        role="status"
+        style={{
+          backgroundColor: 'rgba(234, 168, 0, 0.15)',
+          border: '1px solid var(--color-marigold)',
+          color: '#8A6100',
+          padding: '14px 18px',
+          borderRadius: 'var(--radius-md)',
+          marginBottom: '24px',
+          fontWeight: 600,
+          fontSize: '0.9rem',
+        }}
+      >
+        🚧 Раздел в разработке — данные демонстрационные. Кнопки и списки на этом экране
+        пока не влияют на реальные заказы и клиентов.
+      </div>
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
         <div>

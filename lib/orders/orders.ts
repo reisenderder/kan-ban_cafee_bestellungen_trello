@@ -25,9 +25,13 @@ export interface Order {
   items: OrderItem[];
   totalAmount: number;
   createdAt: string;
+  /** Блок 2, пункт 7: короткий код доступа (открытый). Присутствует только сразу
+   *  после создания заказа и в локальном списке «Мои заказы» этого устройства. */
+  chatAccessCode?: string;
 }
 
 const ORDERS_STORAGE_KEY = 'daymohk_orders';
+const MY_ORDERS_KEY = 'daymohk_my_orders';
 
 function generateOrderNumber(): string {
   const now = new Date();
@@ -36,6 +40,67 @@ function generateOrderNumber(): string {
   const d = String(now.getDate()).padStart(2, '0');
   const seq = String(now.getTime()).slice(-6);
   return `${y}${m}${d}-${seq}`;
+}
+
+/** 4-значный код доступа к заказу и чату (Блок 2, пункт 7). */
+function generateChatAccessCode(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/** Укрупнённый клиентский этап заказа (Feature_Client_Tracking.md §6, §8). */
+export function clientStageLabel(status: OrderStatus | string): string {
+  switch (status) {
+    case 'NEW':
+    case 'ACCEPTED':
+      return 'Заказ принят';
+    case 'COOKING':
+    case 'READY_FOR_DELIVERY':
+      return 'На кухне';
+    case 'IN_TRANSIT':
+      return 'Уже в пути';
+    case 'DELIVERED':
+    case 'CLOSED':
+      return 'Доставлен';
+    case 'CANCELLED':
+      return 'Отменён';
+    default:
+      return 'В обработке';
+  }
+}
+
+export interface MyOrderRef {
+  id: string;
+  orderNumber: string;
+  chatAccessCode: string;
+  createdAt: string;
+}
+
+/** Локальный список заказов, оформленных на этом устройстве (для панели «Мои заказы»). */
+export function getMyOrders(): MyOrderRef[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(MY_ORDERS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+}
+
+function addMyOrder(ref: MyOrderRef) {
+  if (typeof window === 'undefined') return;
+  try {
+    const existing = getMyOrders().filter((o) => o.orderNumber !== ref.orderNumber);
+    localStorage.setItem(MY_ORDERS_KEY, JSON.stringify([ref, ...existing].slice(0, 30)));
+  } catch (e) {}
 }
 
 function getStoredOrders(): Order[] {
@@ -70,6 +135,11 @@ export async function createOrderInSupabase(input: {
   items: OrderItem[];
   totalAmount: number;
 }): Promise<Order> {
+  // Код доступа генерируется здесь — то есть уже ПОСЛЕ успешной OTP-верификации,
+  // потому что createOrderInSupabase вызывается из onVerifySuccess (Блок 2, пункт 7).
+  const chatAccessCode = generateChatAccessCode();
+  const chatAccessCodeHash = await sha256Hex(chatAccessCode);
+
   const order: Order = {
     id: `order-${Date.now()}`,
     orderNumber: generateOrderNumber(),
@@ -80,6 +150,7 @@ export async function createOrderInSupabase(input: {
     items: input.items,
     totalAmount: input.totalAmount,
     createdAt: new Date().toISOString(),
+    chatAccessCode,
   };
 
   const stored = getStoredOrders();
@@ -98,6 +169,7 @@ export async function createOrderInSupabase(input: {
         status: order.status,
         items: order.items,
         total_amount: order.totalAmount,
+        chat_access_code_hash: chatAccessCodeHash,
       })
       .select()
       .single();
@@ -113,7 +185,58 @@ export async function createOrderInSupabase(input: {
     // Supabase недоступен — заказ остаётся сохранённым локально
   }
 
+  addMyOrder({
+    id: order.id,
+    orderNumber: order.orderNumber,
+    chatAccessCode,
+    createdAt: order.createdAt,
+  });
+
   return order;
+}
+
+/**
+ * Возврат клиента к заказу с любого устройства по паре «номер заказа + код доступа»
+ * (Блок 2, пункт 7). Идёт через RPC get_order_by_access (SECURITY DEFINER), а не
+ * открытым SELECT. Локальная подстраховка — по списку «Мои заказы» этого устройства.
+ */
+export async function fetchOrderByNumberAndCode(
+  orderNumber: string,
+  code: string
+): Promise<Order | null> {
+  const num = orderNumber.trim();
+  const c = code.trim();
+  if (!num || !c) return null;
+
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('get_order_by_access', {
+      p_order_number: num,
+      p_code: c,
+    });
+
+    if (!error && Array.isArray(data) && data.length > 0) {
+      const row: any = data[0];
+      return {
+        id: row.id,
+        orderNumber: row.order_number,
+        customerName: '',
+        customerPhone: '',
+        address: '',
+        status: row.status,
+        items: row.items || [],
+        totalAmount: Number(row.total_amount),
+        createdAt: row.created_at,
+      };
+    }
+  } catch (err) {
+    // ignore — падаем на локальную подстраховку
+  }
+
+  const local = getStoredOrders().find(
+    (o) => o.orderNumber === num && o.chatAccessCode === c
+  );
+  return local || null;
 }
 
 /**

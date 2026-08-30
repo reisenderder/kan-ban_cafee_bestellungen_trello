@@ -17,6 +17,76 @@
 
 ## 🚀 История версий
 
+### 📌 Версия v1.0.3 — Блок 2: операционная доводка (в работе)
+* **Источник**: план [`work_plans/active/Work_Plan_Block_2_Ops_Auth_Polish.md`](../work_plans/active/Work_Plan_Block_2_Ops_Auth_Polish.md) (v3.0), 10 согласованных пунктов, группы A → B → C → D → E.
+* **Спеки**: перед реализацией спецификации приведены в соответствие с 10 пунктами (16 файлов, сверху вниз, коммит `7a6a0d7`; каждая правка помечена `[Правка Блока 2 — 2026-08-29]`).
+
+#### Группа A — доводка панели меню админа (пункты 1–2)
+
+##### ⚙️ [FEATURE]
+* **Категорию блюда нельзя не выбрать** (пункт 1): в форме `➕ Добавить новое блюдо` ([`app/admin/dashboard/page.tsx`](../app/admin/dashboard/page.tsx)) первым пунктом выпадающего списка теперь стоит невыбираемое приглашение «— Выберите категорию —». Раньше визуально была подставлена первая реальная категория, но во внутреннем состоянии поле было пустым, и сохранение падало с `alert`. Теперь: категория по умолчанию не подставляется (`resetDishForm` и `useEffect` больше не делают `setNewCategory(categories[0])`), при попытке сохранить без осознанного выбора показывается инлайн-сообщение «Сначала выберите категорию блюда.» с красной рамкой, форма не отправляется. В режиме редактирования подставляется текущая категория блюда. Спека: `specs/03_feature_specs/Feature_Menu_Management.md` §16 п.6, `specs/06_user_stories/User_Stories_Menu_Availability.md` US-MENU-01.
+* **Жёсткое удаление блюда из архива** (пункт 2): в разделе `🗄️ Архив блюд` рядом с `♻️ Восстановить` добавлена кнопка `🗑️ Удалить навсегда`. Открывает `confirm` с явным текстом о необратимости и о том, что блюдо исчезнет у всех устройств; после подтверждения блюдо полностью стирается из таблицы `dishes` Supabase и из локального стора. Новая функция `deleteDishPermanentlyInSupabase(dishId)` в [`lib/menu/dishes.ts`](../lib/menu/dishes.ts) со страховкой: жёсткое удаление возможно только для блюда со статусом «в архиве» (`isArchived`), из активного меню по-прежнему только архивирование. Схема БД не меняется (обычный `DELETE`). Спека: `Feature_Menu_Management.md` §13.4, `User_Stories_Menu_Availability.md` US-MENU-10.
+
+##### 🗄️ [DATABASE]
+* Миграции для группы A не требуются.
+
+#### Группа B — живая синхронизация витрины + возврат клиента к заказу (пункты 3, 7)
+
+##### ⚙️ [FEATURE]
+* **Витрина обновляется между устройствами без F5** (пункт 3): новая подписка `subscribeToDishesRealtime()` в [`lib/menu/dishes.ts`](../lib/menu/dishes.ts) по образцу `subscribeToOrdersRealtime` (Supabase Realtime, `postgres_changes`, таблица `dishes`). В [`app/page.tsx`](../app/page.tsx) витрина теперь подписана и на локальные события (`daymohk_menu_updated` / `storage`), и на Realtime по `dishes` — публикация, скрытие, изменение цены/фото и жёсткое удаление блюда с одного устройства сразу видны на витрине другого.
+* **Возврат клиента к заказу и чату с любого устройства** (пункт 7): при оформлении заказа клиент получает **4-значный код доступа**. Код генерируется в `createOrderInSupabase` — то есть уже после успешной OTP-верификации; в БД хранится только SHA-256 хэш (`crypto.subtle`), открытый код показывается клиенту один раз. В [`components/CartDrawer.tsx`](../components/CartDrawer.tsx) после оформления крупно выводятся номер заказа и код с подписью «Сохраните номер и код». Новый компонент [`components/MyOrdersPanel.tsx`](../components/MyOrdersPanel.tsx) — панель «📦 Мои заказы» из шапки ([`components/Navbar.tsx`](../components/Navbar.tsx)): форма «номер заказа + код» → показывает укрупнённый статус (`clientStageLabel`) и кнопку «💬 Чат с менеджером» (переиспользует `ClientOrderChatModal`); плюс список заказов, оформленных на этом устройстве (ключ `daymohk_my_orders`). Чтение заказа — через RPC `get_order_by_access` в [`lib/orders/orders.ts`](../lib/orders/orders.ts) (`fetchOrderByNumberAndCode`), с локальной подстраховкой. Панель и модалка свёрстаны mobile-first.
+
+##### 🗄️ [DATABASE] — требуют ручного применения на Production Supabase
+* [`supabase/migrations/00010_dishes_realtime.sql`](../supabase/migrations/00010_dishes_realtime.sql) — включение таблицы `dishes` в публикацию `supabase_realtime` (идемпотентно).
+* [`supabase/migrations/00011_orders_chat_access_code.sql`](../supabase/migrations/00011_orders_chat_access_code.sql) — колонка `orders.chat_access_code_hash` + RPC-функция `public.get_order_by_access(order_number, code)` (`SECURITY DEFINER`, сверяет SHA-256 хэш кода, `GRANT EXECUTE` для `anon`/`authenticated`). Расширение `pgcrypto`. Форма работает и при выключенной RLS, и после её восстановления в группе D.
+* [`supabase/full_schema.sql`](../supabase/full_schema.sql) синхронизирован.
+
+##### 🛡️ [SECURITY] — открытый долг (группа D)
+* Полная сверка чата (`order_chat_messages`) с клиентом по коду и строгие RLS-политики — в группе D (`specs/04_technical_specs/Technical_Access_Audit.md` §18 п.10). Сейчас RLS выключена — доступ по коду опирается на RPC, но данные по-прежнему читаемы анонимным ключом.
+
+#### Группа C — навигация персонала + компактность CRM (пункты 4, 5, 6)
+
+##### ⚙️ [FEATURE]
+* **Администратору — доступ ко всем дэшбордам** (пункт 4): в [`app/admin/dashboard/page.tsx`](../app/admin/dashboard/page.tsx) добавлена вкладка `🖥️ Дэшборды` со ссылками на CRM менеджера, экран кухни, кабинет курьера и отдел урегулирования. Неготовые разделы (курьер, урегулирование) помечены `(на разработке)`. Спека: `specs/03_feature_specs/Feature_Admin_Control.md` §4.1, §17 п.7.
+* **Навигация персонала между экранами** (пункт 5): новый компонент [`components/StaffTopNav.tsx`](../components/StaffTopNav.tsx) — тонкая полоска служебной навигации с кнопкой `← Назад`, ссылками по роли вошедшего и кнопкой `Выход`. Подключён на `/kitchen/dashboard`, `/manager/crm`, `/courier/dashboard`, `/resolution/cases`, `/admin/dashboard`. Набор ссылок — по таблице ролей в [`lib/auth/staffSession.ts`](../lib/auth/staffSession.ts) (`screensForRole`): менеджер и отдел урегулирования видят все экраны кроме админского; кухня и курьер — только свой; администратор — все. Компонент написан сразу с полной моделью из 5 ролей, хотя в Блоке 2 активны только `ADMIN` и `MANAGER`. Устраняет исходную проблему — менеджер с экрана кухни возвращается в CRM в один клик. Из шапки CRM убраны прежние жёсткие ссылки на кухню и админку (их заменяет полоска).
+* **Компактная карточка заказа в CRM** (пункт 6): в [`app/manager/crm/page.tsx`](../app/manager/crm/page.tsx) карточка канбана переработана в свёрнутый + раскрытый вид. **Свёрнутый** (≈98px вместо ≈200+): номер заказа, состав, статус, кнопка чата и основное действие по статусу (`Принять` / `На кухню` / `Готово`). Имя клиента и адрес скрыты. **Раскрытый** — Side Drawer по клику на карточку: клиент, телефон (маскированный), адрес, состав, сумма, все действия (`Скопировать детали для курьера`, `Эскалация` / `Вернуть в работу`, открыть чат). Свёрстано mobile-first (одна колонка на узком экране, без горизонтального скролла страницы).
+
+##### 🛡️ [SECURITY] — временное решение (заменяется в группе D)
+* Роль для `StaffTopNav` пока берётся из маркера `daymohk_staff_session` в `localStorage`, который ставит доработанный экран входа ([`app/login/page.tsx`](../app/login/page.tsx)). Настоящей проверки логина ещё нет (пункт 8, группа D) — маркер можно подставить руками через devtools. В группе D роль будет читаться из `app_metadata` JWT Supabase Auth, а guard страниц (`middleware.ts`) и RLS восстанавливаются там же. Навигационный доступ к экрану не расширяет права на клиентские данные — маскирование на каждом экране сохраняется (`Technical_Access_Audit.md` §4–§5).
+
+##### 🎨 [DESIGN]
+* Токены и правила `specs/05_visual_rules_skills/UI_UX_Design_System.md` §2.1: свёрнутая карточка + Side Drawer по референсу Sunsama; бейдж непрочитанных сообщений — компактный по площади, но заметный (`--color-error` с контрастным кольцом). Стили полоски навигации и карточки CRM — в [`app/globals.css`](../app/globals.css) (`.staff-topnav*`, `.crm-board`, `.crm-column`, `.crm-card*`, `.crm-drawer*`), с медиазапросами под узкий экран.
+
+##### 🗄️ [DATABASE]
+* Миграции для группы C не требуются.
+
+#### Группа D — настоящий вход персонала + guard + RLS (пункты 8, 9)
+
+Решения заказчика (2026-08-30): путь входа остаётся `/login` (скрыт из индексации, без ссылок с витрины); учётки — обычные email + пароль (без Google/Apple), заводит владелец сам; восстановление пароля — из панели Supabase, отдельной страницы «Забыли пароль?» в Блоке 2 нет; guard закрывает все пять служебных разделов; чат клиента по заказу пока не закрывается (осознанный компромисс); два коммита на группу.
+
+##### 🛡️ [SECURITY]
+* **Настоящий вход персонала через Supabase Auth** (пункт 8): [`app/login/LoginForm.tsx`](../app/login/LoginForm.tsx) (+ серверная обёртка [`app/login/page.tsx`](../app/login/page.tsx) с Suspense, [`app/login/layout.tsx`](../app/login/layout.tsx) с `robots noindex`) — только email + пароль через `supabase.auth.signInWithPassword`, внятные сообщения об ошибке, редирект по роли. Убраны прежняя вкладка выбора роли, временный маркер `daymohk_staff_session` и «демо-редирект по любому вводу». Роль берётся из `app_metadata.role` учётной записи.
+* **Guard служебных страниц** (пункт 8): новый [`middleware.ts`](../middleware.ts) + [`lib/supabase/middleware.ts`](../lib/supabase/middleware.ts) закрывают `/admin`, `/manager`, `/kitchen`, `/courier`, `/resolution`. Нет сессии → `/login?redirectTo=…`; `employee_profiles.status != 'ACTIVE'` → `/login?error=suspended`; нет роли → `/login?error=norole`; раздел `/admin` при роли не-ADMIN → редирект в `/manager/crm`. Если Supabase не сконфигурирован (локальная разработка без `.env.local`) — guard пропускает всё, чтобы не мешать разработке и headless-QA; на Production (переменные заданы) guard активен полностью.
+* **Роль в навигации — из настоящей сессии**: [`lib/auth/staffSession.ts`](../lib/auth/staffSession.ts) переписан — `getStaffRole()` читает `app_metadata.role` из проверенной сессии Supabase (`getUser`), `signOutStaff()` снимает сессию. Удалены `getStaffSession`/`setStaffSession`/`clearStaffSession`/`FALLBACK_NAV_ROLE` (localStorage-маркер группы C). [`components/StaffTopNav.tsx`](../components/StaffTopNav.tsx) обновлён; кнопка «Выход» вызывает `signOut`. Без сессии полоска показывает только «← Назад» и «Выход» (в норме до неё не дойти — раньше отрабатывает middleware).
+* **«Служебный вход» убран с витрины** (пункт 8): из [`components/Navbar.tsx`](../components/Navbar.tsx) удалена ссылка «🔑 Служебный вход» (`Technical_Access_Audit.md` §18 п.9). Клиентская кнопка «📦 Мои заказы» была добавлена в группе B.
+* **Скрипт заведения учёток**: [`scripts/create-staff-users.mjs`](../scripts/create-staff-users.mjs) — владелец запускает локально с `SUPABASE_SERVICE_ROLE_KEY` и парами email/пароль в переменных окружения; создаёт/обновляет пользователей ADMIN и MANAGER с `app_metadata.role`, апсертит строки в `employee_profiles`. Ключи и пароли в репозиторий не попадают.
+
+##### 🚧 [FEATURE]
+* **Баннер отдела урегулирования** (пункт 9): на [`app/resolution/cases/page.tsx`](../app/resolution/cases/page.tsx) добавлен заметный баннер «🚧 Раздел в разработке — данные демонстрационные». Демо-данные и кнопки не тронуты — осознанная ширма. `StaffTopNav` там уже с группы C.
+
+##### 🗄️ [DATABASE] — требуют ручного применения на Production Supabase (порядок: 00010 → 00011 → 00012 → 00013, до деплоя Vercel)
+* **Фикс `00011`**: при накатке на боевой Supabase `CREATE FUNCTION public.get_order_by_access` падал с `function digest(text, unknown) does not exist` — на Supabase `pgcrypto` (функция `digest`) стоит в схеме `extensions`, а не `public`. В функции указан `SET search_path = public, extensions`. Синхронизировано в [`supabase/full_schema.sql`](../supabase/full_schema.sql). Выявлено при совместной накатке миграций 2026-08-30.
+* [`supabase/migrations/00012_employee_profiles.sql`](../supabase/migrations/00012_employee_profiles.sql) — таблица `public.employee_profiles` (`id`=`auth.users.id`, `role`, `status`), хелперы `get_current_user_role()` / `is_active_employee()` (`SECURITY DEFINER`), RLS для самой таблицы (сотрудник читает свою строку, админ — все; запись только service-role).
+* [`supabase/migrations/00013_rls_policies.sql`](../supabase/migrations/00013_rls_policies.sql) — `default deny` восстановлен на `dishes` / `orders` / `order_chat_messages`. `dishes`: SELECT всем, изменения только ADMIN. `orders`: INSERT анонимно (витрина), SELECT/UPDATE только MANAGER/ADMIN; клиент — через RPC `get_order_by_access` (обходит RLS). `order_chat_messages`: SELECT/INSERT открыты `anon` (Realtime сохраняется), UPDATE только персонал.
+* [`supabase/full_schema.sql`](../supabase/full_schema.sql) синхронизирован.
+
+##### 🛡️ [SECURITY] — открытый долг (после Блока 2)
+* **Изоляция чата клиента по заказу**: `order_chat_messages` по-прежнему читаема/пишется анонимным ключом (id заказов — UUID, но при известном `order_id` переписку видно). Заказчик подтвердил компромисс: полноценная изоляция «одна переписка — своя комната, только клиент + менеджер» вынесена в отдельную будущую задачу (`Technical_Access_Audit.md` §18 п.10 это допускает).
+* **Восстановление пароля из приложения**: страницы «Забыли пароль?» нет; сброс — вручную из панели Supabase. Самостоятельный флоу (`resetPasswordForEmail` + страница нового пароля + настроенный SMTP) — отдельная будущая задача.
+* **Управление сотрудниками из UI администратора**: раздел «Сотрудники» в админке — по-прежнему демо-данные. Настоящее управление — отдельный будущий блок (`Feature_Admin_Control.md` §6).
+
+---
+
 ### 📌 Версия v1.0.0 — Боевой запуск Блока 1 (25.08.2026)
 * **Статус**: Опубликовано на Vercel + Supabase DB.
 * **Описание release**: Запуск базового боевого ядра приема заказов.

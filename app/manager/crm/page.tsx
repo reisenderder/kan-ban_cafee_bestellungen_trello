@@ -17,6 +17,7 @@ import {
   subscribeToChatRealtime,
   subscribeToAllChatRealtime,
 } from '../../../lib/orders/chat';
+import { StaffTopNav } from '../../../components/StaffTopNav';
 
 export interface CrmOrder {
   id: string;
@@ -53,9 +54,36 @@ function mapOrderToCrmOrder(order: Order): CrmOrder {
   };
 }
 
+// Status columns in Kanban
+const columns: { title: string; status: OrderStatus; color: string }[] = [
+  { title: 'Новые заказы', status: 'NEW', color: 'var(--color-marigold-zest)' },
+  { title: 'Приняты в работу', status: 'ACCEPTED', color: 'var(--color-deep-forest)' },
+  { title: 'Готовятся', status: 'COOKING', color: 'var(--color-deep-forest)' },
+  { title: 'Готовы к выдаче', status: 'READY_FOR_DELIVERY', color: 'var(--color-success)' },
+  { title: 'Доставляются', status: 'IN_TRANSIT', color: 'var(--color-deep-forest)' },
+  { title: 'Завершённые', status: 'DELIVERED', color: 'var(--color-text-muted)' },
+  { title: 'Проблема / Урегулирование', status: 'PROBLEM', color: 'var(--color-error)' },
+];
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  NEW: 'Новый',
+  ACCEPTED: 'В работе',
+  COOKING: 'Готовится',
+  READY_FOR_DELIVERY: 'Готов',
+  IN_TRANSIT: 'В пути',
+  DELIVERED: 'Завершён',
+  PROBLEM: 'Проблема',
+};
+
+function statusColor(status: OrderStatus): string {
+  return columns.find((c) => c.status === status)?.color ?? 'var(--color-text-muted)';
+}
+
 export default function ManagerCrmPage() {
   const [orders, setOrders] = useState<CrmOrder[]>([]);
   const [selectedChatOrder, setSelectedChatOrder] = useState<CrmOrder | null>(null);
+  // Раскрытый вид карточки — Side Drawer (Feature_Order_CRM.md §6.1)
+  const [detailOrder, setDetailOrder] = useState<CrmOrder | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [newMsgText, setNewMsgText] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
@@ -90,16 +118,12 @@ export default function ManagerCrmPage() {
     return unsubscribe;
   }, [selectedChatOrder]);
 
-  // Status columns in Kanban
-  const columns: { title: string; status: CrmOrder['status']; color: string }[] = [
-    { title: 'Новые заказы', status: 'NEW', color: 'var(--color-marigold-zest)' },
-    { title: 'Приняты в работу', status: 'ACCEPTED', color: 'var(--color-deep-forest)' },
-    { title: 'Готовятся', status: 'COOKING', color: 'var(--color-deep-forest)' },
-    { title: 'Готовы к выдаче', status: 'READY_FOR_DELIVERY', color: 'var(--color-success)' },
-    { title: 'Доставляются', status: 'IN_TRANSIT', color: 'var(--color-deep-forest)' },
-    { title: 'Завершённые', status: 'DELIVERED', color: 'var(--color-text-muted)' },
-    { title: 'Проблема / Урегулирование', status: 'PROBLEM', color: 'var(--color-error)' },
-  ];
+  // Держим открытый Side Drawer синхронным с обновлениями из Realtime
+  useEffect(() => {
+    if (!detailOrder) return;
+    const fresh = orders.find((o) => o.id === detailOrder.id);
+    if (fresh && fresh !== detailOrder) setDetailOrder(fresh);
+  }, [orders, detailOrder]);
 
   // Open Chat Drawer, load real messages and mark them as read (resets unread counter)
   const handleOpenChat = async (order: CrmOrder) => {
@@ -113,7 +137,7 @@ export default function ManagerCrmPage() {
     );
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: CrmOrder['status']) => {
+  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
     );
@@ -141,7 +165,17 @@ export default function ManagerCrmPage() {
   // Kitchen print ticket simulation
   const handlePrintKitchenTicket = (order: CrmOrder) => {
     updateOrderStatus(order.id, 'COOKING');
-    alert(`🍳 Чек заказа #${order.orderNumber} отправлен на кухню!\nСтатус изменён на "COOKING".`);
+    setNotification(`🍳 Чек заказа #${order.orderNumber} отправлен на кухню! Статус изменён на "Готовится".`);
+  };
+
+  const handleEscalate = (order: CrmOrder) => {
+    updateOrderStatus(order.id, 'PROBLEM');
+    setNotification(`⚠️ Заказ #${order.orderNumber} отправлен в урегулирование.`);
+  };
+
+  const handleReturnToWork = (order: CrmOrder) => {
+    updateOrderStatus(order.id, 'ACCEPTED');
+    setNotification(`✓ Заказ #${order.orderNumber} выведен из урегулирования и возвращён в работу!`);
   };
 
   // Send message in chat
@@ -156,22 +190,25 @@ export default function ManagerCrmPage() {
     setChatMessages((prev) => [...prev, newMsg]);
   };
 
+  // Основное контекстное действие по статусу — показывается и в свёрнутой карточке, и в Drawer
+  const primaryAction = (
+    ord: CrmOrder
+  ): { label: string; run: () => void; tone: 'primary' | 'success' } | null => {
+    if (ord.status === 'NEW') return { label: 'Принять', run: () => updateOrderStatus(ord.id, 'ACCEPTED'), tone: 'primary' };
+    if (ord.status === 'ACCEPTED') return { label: '🍳 На кухню', run: () => handlePrintKitchenTicket(ord), tone: 'primary' };
+    if (ord.status === 'COOKING') return { label: '✓ Готово', run: () => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY'), tone: 'success' };
+    return null;
+  };
+
   return (
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '24px' }}>
+      <StaffTopNav current="crm" />
+
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <span className="badge badge-forest" style={{ marginBottom: '4px' }}>Рабочий контур</span>
           <h1 style={{ fontSize: '1.8rem', margin: 0, fontWeight: 800 }}>CRM Менеджера Заказов DAYMOHKCOFEE</h1>
-        </div>
-
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <a href="/kitchen/dashboard" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-            🍳 Электронный экран повара (KDS)
-          </a>
-          <a href="/admin/dashboard" className="btn-secondary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-            ⚙️ Админка
-          </a>
         </div>
       </div>
 
@@ -202,43 +239,24 @@ export default function ManagerCrmPage() {
       )}
 
       {/* Kanban Board */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '16px',
-          overflowX: 'auto',
-          paddingBottom: '24px',
-        }}
-      >
+      <div className="crm-board">
         {columns.map((col) => {
           const colOrders = orders.filter((o) => o.status === col.status);
 
           return (
-            <div
-              key={col.status}
-              style={{
-                backgroundColor: 'var(--color-surface-subtle)',
-                borderRadius: 'var(--radius-md)',
-                padding: '16px',
-                border: '1px solid var(--color-border)',
-                minWidth: '270px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            <div key={col.status} className="crm-column">
               {/* Column Header */}
               <div
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '16px',
+                  marginBottom: '12px',
                   paddingBottom: '8px',
                   borderBottom: `2px solid ${col.color}`,
                 }}
               >
-                <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 700 }}>{col.title}</h3>
+                <h3 style={{ fontSize: '0.95rem', margin: 0, fontWeight: 700 }}>{col.title}</h3>
                 <span
                   style={{
                     backgroundColor: col.color,
@@ -254,187 +272,243 @@ export default function ManagerCrmPage() {
               </div>
 
               {/* Order Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
                 {colOrders.length === 0 ? (
                   <div
                     style={{
                       textAlign: 'center',
-                      padding: '24px 0',
+                      padding: '16px 0',
                       color: 'var(--color-text-muted)',
-                      fontSize: '0.85rem',
+                      fontSize: '0.8rem',
                       fontStyle: 'italic',
                     }}
                   >
                     Нет заказов
                   </div>
                 ) : (
-                  colOrders.map((ord) => (
-                    <div
-                      key={ord.id}
-                      style={{
-                        backgroundColor: 'var(--color-surface)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '14px',
-                        border: '1px solid var(--color-border)',
-                        boxShadow: 'var(--shadow-sm)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                          <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--color-deep-forest)' }}>
-                            #{ord.orderNumber}
-                          </span>
-                          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{ord.createdAt}</span>
-                        </div>
+                  colOrders.map((ord) => {
+                    const action = primaryAction(ord);
+                    const hasUnread = !!ord.unreadMessagesCount && ord.unreadMessagesCount > 0;
 
-                        <p style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{ord.customerName}</p>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '4px' }}>
-                          📍 {ord.address}
-                        </p>
-                        <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>
-                          📞 {ord.customerPhoneMasked}
-                        </p>
-
-                        <div
-                          style={{
-                            backgroundColor: 'var(--color-surface-subtle)',
-                            padding: '8px 10px',
-                            borderRadius: 'var(--radius-sm)',
-                            fontSize: '0.85rem',
-                            marginBottom: '12px',
-                          }}
-                        >
-                          <strong>Состав:</strong> {ord.itemsSummary}
-                        </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                          <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--color-deep-forest)' }}>
-                            {ord.totalAmount} EGP
-                          </span>
-
-                          {/* Chat Launcher Button with Live Unread Messages Counter */}
-                          <button
-                            onClick={() => handleOpenChat(ord)}
+                    return (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        className="crm-card"
+                        onClick={() => setDetailOrder(ord)}
+                        title="Открыть карточку заказа"
+                      >
+                        {/* Свёрнутый вид: номер + статус */}
+                        <div className="crm-card__row">
+                          <span className="crm-card__number">#{ord.orderNumber}</span>
+                          <span
+                            className="crm-card__status"
                             style={{
-                              padding: '4px 10px',
-                              borderRadius: 'var(--radius-full)',
-                              border: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'none' : '1px solid var(--color-border)',
-                              backgroundColor: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'var(--color-warm-terracotta)' : 'var(--color-surface)',
-                              color: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? '#FFF' : 'var(--color-deep-forest)',
-                              fontWeight: 700,
-                              fontSize: '0.75rem',
-                              cursor: 'pointer',
-                              boxShadow: ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? 'var(--shadow-sm)' : 'none',
+                              backgroundColor: ord.status === 'NEW' ? statusColor(ord.status) : 'transparent',
+                              color: ord.status === 'NEW' ? 'var(--color-deep-forest)' : statusColor(ord.status),
+                              border: ord.status === 'NEW' ? 'none' : `1px solid ${statusColor(ord.status)}`,
                             }}
                           >
-                            💬 Чат {ord.unreadMessagesCount && ord.unreadMessagesCount > 0 ? `🔴 (${ord.unreadMessagesCount} нов.)` : ''}
-                          </button>
+                            {STATUS_LABEL[ord.status]}
+                          </span>
                         </div>
 
-                        {/* Context Actions */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          {ord.status === 'NEW' && (
-                            <button
-                              className="btn-primary"
-                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
-                              onClick={() => updateOrderStatus(ord.id, 'ACCEPTED')}
-                            >
-                              Принять в работу
-                            </button>
-                          )}
+                        {/* Состав */}
+                        <div className="crm-card__items">{ord.itemsSummary}</div>
 
-                          {ord.status === 'ACCEPTED' && (
-                            <button
-                              className="btn-secondary"
-                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem' }}
-                              onClick={() => handlePrintKitchenTicket(ord)}
-                            >
-                              🍳 Отправить на Кухню (Печать)
-                            </button>
-                          )}
-
-                          {ord.status === 'COOKING' && (
-                            <button
-                              className="btn-primary"
-                              style={{ width: '100%', padding: '8px', fontSize: '0.85rem', backgroundColor: 'var(--color-success)' }}
-                              onClick={() => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY')}
-                            >
-                              ✓ Отметить готовность
-                            </button>
-                          )}
-
-                          {/* Universal Courier Copy Button */}
-                          <button
-                            onClick={() => handleCopyForCourier(ord)}
-                            style={{
-                              width: '100%',
-                              padding: '8px',
-                              borderRadius: 'var(--radius-sm)',
-                              border: '1px solid var(--color-success)',
-                              backgroundColor: 'rgba(46, 125, 50, 0.08)',
-                              color: 'var(--color-success)',
-                              fontWeight: 700,
-                              fontSize: '0.8rem',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              justifyContent: 'center',
-                              alignItems: 'center',
-                              gap: '6px',
+                        {/* Чат + основное действие */}
+                        <div className="crm-card__row">
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            className={`crm-card__chat${hasUnread ? ' crm-card__chat--unread' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenChat(ord);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleOpenChat(ord);
+                              }
                             }}
                           >
-                            📋 Скопировать детали для курьера
-                          </button>
+                            💬 Чат
+                            {hasUnread && (
+                              <span className="crm-card__unread-badge">{ord.unreadMessagesCount}</span>
+                            )}
+                          </span>
 
-                          {ord.status === 'PROBLEM' && (
-                            <button
-                              className="btn-primary"
-                              style={{
-                                width: '100%',
-                                padding: '8px',
-                                fontSize: '0.85rem',
-                                backgroundColor: 'var(--color-deep-forest)',
+                          {action && (
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                action.run();
                               }}
-                              onClick={() => {
-                                updateOrderStatus(ord.id, 'ACCEPTED');
-                                setNotification(`✓ Заказ #${ord.orderNumber} выведен из урегулирования и возвращён в работу!`);
-                              }}
-                            >
-                              ↩️ Вернуть заказ в работу
-                            </button>
-                          )}
-
-                          {ord.status !== 'PROBLEM' && (
-                            <button
-                              onClick={() => {
-                                updateOrderStatus(ord.id, 'PROBLEM');
-                                setNotification(`⚠️ Заказ #${ord.orderNumber} отправлен в урегулирование.`);
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  action.run();
+                                }
                               }}
                               style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--color-error)',
+                                padding: '5px 12px',
+                                borderRadius: 'var(--radius-full)',
                                 fontSize: '0.75rem',
+                                fontWeight: 800,
                                 cursor: 'pointer',
-                                textAlign: 'center',
-                                marginTop: '2px',
+                                color: '#FFF',
+                                backgroundColor:
+                                  action.tone === 'success' ? 'var(--color-success)' : 'var(--color-warm-terracotta)',
                               }}
                             >
-                              ⚠️ Эскалация в урегулирование
-                            </button>
+                              {action.label}
+                            </span>
                           )}
                         </div>
-                      </div>
-                    </div>
-                  ))
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* РАСКРЫТЫЙ ВИД — SIDE DRAWER (адрес, телефон, оплата, полный набор действий) */}
+      {detailOrder && (
+        <div className="crm-drawer-overlay" onClick={() => setDetailOrder(null)}>
+          <div
+            className="crm-drawer animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="crm-drawer__head">
+              <div>
+                <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>#{detailOrder.orderNumber}</div>
+                <span style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+                  {STATUS_LABEL[detailOrder.status]} · {detailOrder.createdAt}
+                </span>
+              </div>
+              <button
+                onClick={() => setDetailOrder(null)}
+                style={{ background: 'none', border: 'none', color: '#FFF', fontSize: '1.5rem', cursor: 'pointer' }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="crm-drawer__body">
+              <div>
+                <div className="crm-drawer__field-label">Клиент</div>
+                <div className="crm-drawer__field-value">{detailOrder.customerName}</div>
+              </div>
+              <div>
+                <div className="crm-drawer__field-label">Телефон</div>
+                <div className="crm-drawer__field-value">📞 {detailOrder.customerPhoneMasked}</div>
+              </div>
+              <div>
+                <div className="crm-drawer__field-label">Адрес доставки</div>
+                <div className="crm-drawer__field-value">📍 {detailOrder.address}</div>
+              </div>
+              <div>
+                <div className="crm-drawer__field-label">Состав заказа</div>
+                <div
+                  style={{
+                    backgroundColor: 'var(--color-surface-subtle)',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.9rem',
+                  }}
+                >
+                  {detailOrder.itemsSummary}
+                </div>
+              </div>
+              <div>
+                <div className="crm-drawer__field-label">К оплате наличными</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-deep-forest)' }}>
+                  {detailOrder.totalAmount} EGP
+                </div>
+              </div>
+
+              {/* Действия */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                {(() => {
+                  const action = primaryAction(detailOrder);
+                  return action ? (
+                    <button
+                      className="btn-primary"
+                      style={{
+                        width: '100%',
+                        padding: '10px',
+                        fontSize: '0.9rem',
+                        backgroundColor:
+                          action.tone === 'success' ? 'var(--color-success)' : 'var(--color-warm-terracotta)',
+                      }}
+                      onClick={action.run}
+                    >
+                      {action.label}
+                    </button>
+                  ) : null;
+                })()}
+
+                <button
+                  className="btn-secondary"
+                  style={{ width: '100%', padding: '10px', fontSize: '0.9rem' }}
+                  onClick={() => handleOpenChat(detailOrder)}
+                >
+                  💬 Открыть чат с клиентом
+                </button>
+
+                <button
+                  onClick={() => handleCopyForCourier(detailOrder)}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--color-success)',
+                    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+                    color: 'var(--color-success)',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  📋 Скопировать детали для курьера
+                </button>
+
+                {detailOrder.status === 'PROBLEM' ? (
+                  <button
+                    className="btn-primary"
+                    style={{ width: '100%', padding: '10px', fontSize: '0.85rem', backgroundColor: 'var(--color-deep-forest)' }}
+                    onClick={() => handleReturnToWork(detailOrder)}
+                  >
+                    ↩️ Вернуть заказ в работу
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleEscalate(detailOrder)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--color-error)',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      marginTop: '2px',
+                    }}
+                  >
+                    ⚠️ Эскалация в урегулирование
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* REALTIME CHAT DRAWER MODAL */}
       {selectedChatOrder && (

@@ -2,9 +2,14 @@
 
 > **Статус**: Проверено и зафиксировано (Группа 4: Данные, Auth и безопасность Supabase)
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-07-26
-> **Версия**: 1.2
+> **Дата обновления**: 2026-08-29
+> **Версия**: 1.3
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`, `Technical_MVP_Implementation_Decisions.md`
+
+> **[Правка Блока 2 — 2026-08-29]** Правка под пункт 7 плана
+> `../../work_plans/active/Work_Plan_Block_2_Ops_Auth_Polish.md`: поле
+> `chat_access_code_hash` в `ClientOrderAccess` для кросс-девайс доступа к заказу и чату
+> по паре «номер заказа + код» (§13, §15 п.10). Аддитивная миграция.
 
 ---
 
@@ -264,11 +269,18 @@
 | id | uuid | да | PK, gen_random_uuid() |
 | order_id | uuid | да | FK → orders.id |
 | device_token_hash | text | да | SHA-256 хэш токена, хранящегося на устройстве клиента |
+| chat_access_code_hash | text | да | **(Блок 2)** Хэш короткого кода доступа (напр. 4 цифры), выданного клиенту после подтверждения канала. Вместе с `orderNumber` открывает заказ и чат с любого устройства |
 | created_at | timestamptz | да | Момент создания |
 | expires_at | timestamptz | да | Момент истечения доступа |
 | last_accessed_at | timestamptz | нет | Последний визит клиента на страницу заказа |
 
 Примечание: Токен хранится на устройстве клиента (localStorage). В БД хранится только хэш. Персональных данных клиента в этой таблице нет.
+
+**(Блок 2)** `chat_access_code` в открытом виде показывается клиенту один раз при
+оформлении заказа (заметно, с подписью «сохраните код»); в БД — только хэш. Проверка
+пары «`orderNumber` + код» выполняется серверной RPC-функцией под `default deny` RLS,
+без открытого `SELECT` по таблице заказов. Код генерируется только после успешного
+подтверждения Telegram/Email (OTP).
 
 ---
 
@@ -310,3 +322,4 @@
 7. `В урегулировании` является состоянием отдельного `ResolutionCase`, а не `OrderDraft`.
 8. Повторная продажа создает отдельный `Order` со ссылкой `sourceReturnedOrderId`; данные исходного и нового клиента не объединяются.
 9. **Решение: В MVP отдельная таблица `CustomerProfile` не создаётся.** Все контактные данные клиента привязаны к конкретному заказу через `CustomerContact`. Нормализация и сопоставление клиентов между заказами выполняется через `normalized_phone_e164` и `normalized_telegram_username` в `CustomerContact`. Отдельный профиль клиента — это backlog для будущих версий.
+10. **(Блок 2)** Код доступа клиента к заказу (`chat_access_code`) — открытый 4-значный код, генерируется только после подтверждения канала OTP, показывается клиенту один раз при оформлении; в БД хранится только SHA-256 хэш. Пара «`orderNumber` + код» открывает заказ через RPC-функцию `get_order_by_access` (`SECURITY DEFINER`), а не открытым `SELECT` — форма работает и при выключенной RLS, и после её восстановления в группе D. **В текущей упрощённой боевой схеме** (`supabase/full_schema.sql`: таблицы `dishes`, `orders`, `order_chat_messages`; таблицы `ClientOrderAccess` в проде ещё нет) хэш лежит колонкой `orders.chat_access_code_hash` (миграция `00011_orders_chat_access_code.sql`, аддитивная). При вводе полной модели `ClientOrderAccess` (группа D / RLS) поле переносится туда.
