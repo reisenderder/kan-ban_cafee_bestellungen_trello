@@ -280,27 +280,33 @@ export function CartDrawer() {
                           >
                             <button
                               onClick={() => updateQuantity(item.id, -1)}
+                              aria-label="Уменьшить количество"
                               style={{
-                                padding: '4px 10px',
+                                minWidth: '40px',
+                                minHeight: '40px',
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
                                 fontWeight: 'bold',
+                                fontSize: '1.1rem',
                               }}
                             >
                               -
                             </button>
-                            <span style={{ padding: '0 8px', fontWeight: 600, fontSize: '0.9rem' }}>
+                            <span style={{ padding: '0 8px', fontWeight: 600, fontSize: '0.95rem', minWidth: '20px', textAlign: 'center' }}>
                               {item.quantity}
                             </span>
                             <button
                               onClick={() => updateQuantity(item.id, 1)}
+                              aria-label="Увеличить количество"
                               style={{
-                                padding: '4px 10px',
+                                minWidth: '40px',
+                                minHeight: '40px',
                                 background: 'none',
                                 border: 'none',
                                 cursor: 'pointer',
                                 fontWeight: 'bold',
+                                fontSize: '1.1rem',
                               }}
                             >
                               +
@@ -308,12 +314,15 @@ export function CartDrawer() {
                           </div>
                           <button
                             onClick={() => removeItem(item.id)}
+                            aria-label={`Убрать ${item.title} из корзины`}
                             style={{
                               background: 'none',
                               border: 'none',
                               color: 'var(--color-error)',
                               cursor: 'pointer',
-                              fontSize: '1.2rem',
+                              fontSize: '1.3rem',
+                              minWidth: '40px',
+                              minHeight: '40px',
                             }}
                           >
                             &times;

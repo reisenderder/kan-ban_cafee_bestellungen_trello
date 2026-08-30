@@ -165,6 +165,353 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-deep-forest);
 }
 
+/* ── Блок 2, группа E — адаптив витрины под телефон ──────────────── */
+
+/* Верхняя панель витрины */
+.site-nav__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.site-nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.site-nav__logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background-color: var(--color-deep-forest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.site-nav__brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--color-deep-forest);
+  letter-spacing: -0.02em;
+}
+
+.site-nav__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* «Витрина» / «Мои заказы» — лёгкое выделение как кликабельных разделов.
+   В покое — мягкая подложка-пилюля, при наведении/фокусе чуть заметнее. */
+.site-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-subtle);
+  color: var(--color-text-primary);
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.site-nav__link:hover,
+.site-nav__link:focus-visible {
+  border-color: var(--color-border-hover);
+  background-color: #fff;
+  outline: none;
+}
+
+.site-nav__link:active {
+  transform: translateY(1px);
+}
+
+/* Кнопка корзины — всегда видна, на телефоне компактная иконка */
+.site-nav__cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  background-color: var(--color-warm-terracotta);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.site-nav__cart:hover {
+  background-color: var(--color-warm-terracotta-hover);
+}
+
+.site-nav__cart-label {
+  white-space: nowrap;
+}
+
+.site-nav__cart-count {
+  background-color: var(--color-marigold-zest);
+  color: var(--color-deep-forest);
+  border-radius: var(--radius-full);
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+/* Витрина: контейнер и герой */
+.storefront {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+}
+
+.storefront__hero {
+  background: linear-gradient(135deg, var(--color-deep-forest) 0%, #2a523d 100%);
+  border-radius: var(--radius-lg);
+  padding: 60px 40px;
+  color: var(--color-vanilla-cream);
+  margin-bottom: 50px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.storefront__hero h1 {
+  color: var(--color-vanilla-cream);
+  font-size: 3rem;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.storefront__hero p {
+  color: rgba(249, 245, 236, 0.85);
+  font-size: 1.1rem;
+  margin-bottom: 28px;
+  max-width: 600px;
+}
+
+/* Лента категорий — горизонтальный скролл с подсказкой «листается» */
+.menu-cats {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 12px;
+  margin-bottom: 32px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  /* Следующая категория выглядывает + мягкое затухание у правого края */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent 100%);
+  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent 100%);
+}
+
+.menu-cats::-webkit-scrollbar {
+  display: none;
+}
+
+.menu-cats__chip {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+.menu-cats__chip:hover {
+  border-color: var(--color-border-hover);
+}
+
+.menu-cats__chip--active {
+  border-color: transparent;
+  background-color: var(--color-deep-forest);
+  color: var(--color-vanilla-cream);
+}
+
+/* Сетка блюд */
+/* auto-fill даёт 3–4 колонки на десктопе, 2 на планшете/широком телефоне,
+   1 на узком экране — без жёстких брейкпоинтов на число колонок */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 24px;
+}
+
+.menu-grid__photo {
+  position: relative;
+  height: 180px;
+  cursor: pointer;
+  background-color: #e2e8f0;
+}
+
+.menu-grid__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-grid__body {
+  padding: 20px;
+}
+
+.menu-grid__title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.menu-grid__desc {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  line-height: 1.4;
+  min-height: 48px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.menu-grid__buy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.menu-grid__buy .btn-primary {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+  .site-nav__inner {
+    padding: 10px 16px;
+    gap: 10px;
+  }
+  .site-nav__logo {
+    width: 36px;
+    height: 36px;
+    font-size: 1.05rem;
+    border-radius: 10px;
+  }
+  .site-nav__brand-name {
+    font-size: 1.15rem;
+  }
+  .site-nav__actions {
+    gap: 4px;
+  }
+  .site-nav__link {
+    padding: 8px 8px;
+    font-size: 0.9rem;
+  }
+  /* Корзина сжимается в иконку — текст прячем, счётчик остаётся */
+  .site-nav__cart {
+    padding: 9px 11px;
+    font-size: 1.05rem;
+  }
+  .site-nav__cart-label {
+    display: none;
+  }
+
+  .storefront {
+    padding: 24px 16px;
+  }
+  .storefront__hero {
+    padding: 32px 22px;
+    margin-bottom: 32px;
+    border-radius: var(--radius-md);
+  }
+  .storefront__hero h1 {
+    font-size: 2rem;
+  }
+  .storefront__hero p {
+    font-size: 1rem;
+    margin-bottom: 22px;
+  }
+
+  .menu-grid {
+    gap: 16px;
+  }
+  .menu-grid__photo {
+    height: 150px;
+  }
+  .menu-grid__body {
+    padding: 16px;
+  }
+  .menu-grid__title {
+    font-size: 1.02rem;
+  }
+  .menu-grid__desc {
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+    min-height: 0;
+    -webkit-line-clamp: 2;
+  }
+  .menu-cats__chip {
+    padding: 9px 15px;
+    font-size: 0.86rem;
+  }
+}
+
+@media (max-width: 460px) {
+  .site-nav__brand-name {
+    display: none;
+  }
+  .menu-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .menu-grid > .card-menu {
+    width: 100%;
+    max-width: 420px;
+  }
+  .menu-grid__photo {
+    height: 170px;
+  }
+}
+
+/* На телефоне поля ввода — не меньше 16px, иначе iOS зумит страницу при фокусе */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 /* Micro-animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
