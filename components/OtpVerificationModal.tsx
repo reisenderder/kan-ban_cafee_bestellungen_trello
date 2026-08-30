@@ -70,7 +70,7 @@ export function OtpVerificationModal({
         inset: 0,
         backgroundColor: 'rgba(0, 0, 0, 0.6)',
         backdropFilter: 'blur(4px)',
-        zIndex: 300,
+        zIndex: 1200,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

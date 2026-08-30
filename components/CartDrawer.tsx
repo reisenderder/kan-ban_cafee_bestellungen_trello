@@ -88,7 +88,7 @@ export function CartDrawer() {
           inset: 0,
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           backdropFilter: 'blur(4px)',
-          zIndex: 200,
+          zIndex: 600,
           display: 'flex',
           justifyContent: 'flex-end',
           cursor: 'pointer',

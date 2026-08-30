@@ -106,6 +106,7 @@
 * **Корзина и оформление** ([`components/CartDrawer.tsx`](../components/CartDrawer.tsx)): кнопки количества и удаления — тап-зоны не меньше 40px; глобально на экранах ≤768px поля ввода — не меньше 16px (иначе iOS зумит страницу при фокусе).
 * **Экран кухни** ([`app/kitchen/dashboard/page.tsx`](../app/kitchen/dashboard/page.tsx)): сетка карточек `minmax(min(340px, 100%), 1fr)` — на узком экране больше не вылезает за край.
 * Горизонтального скролла страницы нет на 320 / 375 / 390 / 414 / 600 / 768 / 1280 (проверено headless).
+* **Фикс наложения (после мёржа группы E)**: при открытой корзине / панели «Мои заказы» липкая верхняя панель оставалась поверх выезжающей панели. Приведён порядок слоёв (`z-index`): выезжающие панели — `600` (выше шапки `500`), модалки внутри них (OTP `1200`, детали блюда `1000`, чат клиента `1100`) — выше панелей. Файлы: [`components/CartDrawer.tsx`](../components/CartDrawer.tsx), [`components/MyOrdersPanel.tsx`](../components/MyOrdersPanel.tsx), [`components/OtpVerificationModal.tsx`](../components/OtpVerificationModal.tsx).
 
 ---
 
