@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { OtpVerificationModal } from './OtpVerificationModal';
 import { ClientOrderChatModal } from './ClientOrderChatModal';
 import { createOrderInSupabase, Order } from '../lib/orders/orders';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export function CartDrawer() {
   const {
@@ -25,6 +26,8 @@ export function CartDrawer() {
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
   const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+
+  useBodyScrollLock(isCartOpen);
 
   if (!isCartOpen) return null;
 
@@ -86,11 +89,13 @@ export function CartDrawer() {
         style={{
           position: 'fixed',
           inset: 0,
+          height: '100dvh',
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           backdropFilter: 'blur(4px)',
           zIndex: 600,
           display: 'flex',
           justifyContent: 'flex-end',
+          overscrollBehavior: 'contain',
           cursor: 'pointer',
         }}
       >
@@ -101,11 +106,13 @@ export function CartDrawer() {
             width: '100%',
             maxWidth: '480px',
             backgroundColor: 'var(--color-bg)',
-            height: '100%',
+            height: '100dvh',
             display: 'flex',
             flexDirection: 'column',
             boxShadow: 'var(--shadow-lg)',
             overflowY: 'auto',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch',
             cursor: 'default',
           }}
         >
@@ -352,7 +359,6 @@ export function CartDrawer() {
                       padding: '10px 14px',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
                     }}
                   />
                 </div>
@@ -373,7 +379,6 @@ export function CartDrawer() {
                       padding: '10px 14px',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
                     }}
                   />
                 </div>
@@ -394,7 +399,6 @@ export function CartDrawer() {
                       padding: '10px 14px',
                       borderRadius: 'var(--radius-sm)',
                       border: '1px solid var(--color-border)',
-                      fontSize: '0.95rem',
                     }}
                   />
                 </div>
@@ -476,7 +480,6 @@ export function CartDrawer() {
                           padding: '10px 14px',
                           borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--color-border)',
-                          fontSize: '0.9rem',
                         }}
                       />
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
@@ -500,7 +503,6 @@ export function CartDrawer() {
                           padding: '10px 14px',
                           borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--color-border)',
-                          fontSize: '0.9rem',
                         }}
                       />
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', display: 'block', marginTop: '4px' }}>
