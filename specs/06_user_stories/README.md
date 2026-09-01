@@ -23,3 +23,4 @@ User Stories отвечают на вопрос: как конкретный у�
 5. `User_Stories_Discount_Admin.md` - скидочные товары, административные права, покупка, списание и журналы.
 6. `User_Stories_All_Check_Report.md` - отчет проверки всего слоя User Stories перед переходом к Work Plans.
 7. `User_Stories_Kitchen_KDS.md` - шесть историй электронной кухни: очередь, ограниченный состав данных, таймер, идемпотентная готовность, обновление CRM и бумажный fallback.
+8. `User_Stories_Order_And_Client_Access.md` - детальные эпики оформления заказа (US-ORDER-01, US-VERIFY-01, US-VERIFY-02, US-ORDER-02, US-ORDER-03) и жизненного цикла доступа клиента после создания заказа (US-ACCESS-01, US-ACCESS-02, US-ACCESS-03, US-ACCESS-04), в которые вынесены пошаговые сценарии перегруженной `US-02`.
