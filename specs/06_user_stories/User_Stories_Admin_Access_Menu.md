@@ -12,7 +12,7 @@
 > дэшбордами).
 
 > **[Правка — 2026-09-01]** Эпик J плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: `US-ADM-05`
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: `US-ADM-05`
 > и `US-ADM-06` дополнены ссылкой на детальные истории жалобы `US-COMP-03` и
 > `US-COMP-04` в `User_Stories_Complaints.md`; сами истории не переписаны.
 

@@ -7,7 +7,7 @@
 > **Источник**: `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Contact_Confirmation.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `Technical_Access_Audit.md`
 
 > **[Правка — 2026-09-01] Эпик F плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
 > маршрутизации при неуказанном формате обращения приведено в соответствие с
 > `../03_feature_specs/Feature_Resolution_Department.md` v1.2 и
 > `../02_functional_map/Functional_Map.md` v1.7: кейс с неуказанным форматом идёт в

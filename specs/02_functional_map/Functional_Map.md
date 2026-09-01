@@ -7,7 +7,7 @@
 > **Источник**: `../01_global_spec/Global_Spec.md`
 
 > **[Правка — 2026-09-01]** Эпик E плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: возврат клиента
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: возврат клиента
 > к заказу и чату с другого устройства идёт по паре «номер заказа + код доступа», а не по
 > повторной OTP-проверке канала (§6.3). Приведение верхнего слоя в соответствие с уже
 > обновлёнными Feature Specs `Feature_Client_Chat` §6.1 и `Feature_Client_Tracking` §11.

@@ -4,7 +4,7 @@
 > **Дата проверки**: 2026-09-01
 > **Предыдущая проверка**: 2026-07-25 (Группа 2 плана `Work_Plan_Code_Readiness.md`)
 > **Проверяемый документ**: `User_Stories_MVP_Order_Flow.md` (v1.7)
-> **Цель проверки**: сверить 13 историй MVP-потока заказа с Feature Specs и Technical Specs по итогам плана `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.
+> **Цель проверки**: сверить 13 историй MVP-потока заказа с Feature Specs и Technical Specs по итогам плана `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.
 
 ---
 

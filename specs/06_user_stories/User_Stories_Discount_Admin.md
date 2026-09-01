@@ -7,7 +7,7 @@
 > **Источник**: `../03_feature_specs/Feature_Returned_Order_Discount.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Payment_Flow.md`
 
 > **[Правка — 2026-09-01] Эпик I плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Точечно
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Точечно
 > дополнены `US-DISC-05` и `US-DISC-07` наблюдаемыми edge-cases: конкурентная покупка
 > последней единицы завершается ровно одним заказом; проданный или списанный товар
 > сразу недоступен остальным; повторная покупка не создаёт второй связанный заказ;

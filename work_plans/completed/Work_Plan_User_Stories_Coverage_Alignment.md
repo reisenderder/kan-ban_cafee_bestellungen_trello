@@ -1,10 +1,17 @@
 # Work Plan: последовательное выравнивание и дополнение User Stories
 
-> **Статус**: Активный — Git-группы 1–7 смёржены; эпик K Git-группы 8 проработан, ожидается ручное подтверждение пользователя о завершении всего плана
+> **Статус**: Завершён — все 8 Git-групп (эпики A–K) смёржены и подтверждены пользователем; завершение всего плана подтверждено вручную 2026-09-01
 > **Дата создания**: 2026-09-01
 > **Дата обновления**: 2026-09-01
-> **Версия**: 1.10
-> **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/06_user_stories/`, `Work_Plan_Block_1_Lightweight_Launch.md`, `Work_Plan_Block_2_Ops_Auth_Polish.md`
+> **Дата завершения**: 2026-09-01
+> **Версия**: 1.11
+> **Источник**: `../../specs/01_global_spec/Global_Spec.md`, `../../specs/02_functional_map/Functional_Map.md`, `../../specs/03_feature_specs/`, `../../specs/04_technical_specs/`, `../../specs/06_user_stories/`, `../active/Work_Plan_Block_1_Lightweight_Launch.md`, `../active/Work_Plan_Block_2_Ops_Auth_Polish.md`
+
+> **Итог.** План изменил только слой документации (`specs/`). Кода, БД, инфраструктуры,
+> frontend и AI он не касался, поэтому записи в журналы `../../roadmap/` не добавляются
+> (roadmap фиксирует только фактически реализованное поведение — `../../roadmap/README.md`
+> правило 8). Список расхождений реализации с утверждёнными User Stories и предложение
+> следующего Work Plan исправлений кода — в `../active/Implementation_Alignment_Proposal.md`.
 
 ---
 
@@ -126,8 +133,8 @@
 * `../../specs/03_feature_specs/Feature_Kitchen_Ticket.md`
 * `../../specs/03_feature_specs/Feature_Courier_Delivery.md`
 * `../../specs/03_feature_specs/Feature_Resolution_Department.md`
-* `Work_Plan_Block_1_Lightweight_Launch.md`
-* `Work_Plan_Block_2_Ops_Auth_Polish.md`
+* `../active/Work_Plan_Block_1_Lightweight_Launch.md`
+* `../active/Work_Plan_Block_2_Ops_Auth_Polish.md`
 
 ### Gate завершения
 
@@ -468,7 +475,7 @@
 
 1. Построена матрица трассировки `../../specs/06_user_stories/User_Stories_Traceability_Matrix.md`: все 12 принципов Global Spec §5 доведены до проверяемых историй, у всех 72 историй есть источник верхнего уровня, все 15 Feature Specs имеют сценарное покрытие.
 2. Оба check report переписаны под актуальное состояние: `User_Stories_All_Check_Report.md` и `User_Stories_MVP_Order_Flow_Check_Report.md` (было 38 историй в 4 документах — стало 72 в 8).
-3. Обновлены индексы: `../../specs/06_user_stories/README.md`, `../../specs/README.md`, `README.md` этой папки.
+3. Обновлены индексы: `../../specs/06_user_stories/README.md`, `../../specs/README.md`, `../active/README.md`, `../README.md`.
 4. Enum `complaint_category` и `complaint_status` в `../../specs/04_technical_specs/Technical_Admin_Complaints.md` v1.2 §4 приведены к спискам `Feature_Complaints.md` §7/§14 — последнее расхождение Feature ↔ Technical, найденное в эпике J.
 5. Оставшиеся post-MVP границы сведены в `User_Stories_All_Check_Report.md` §7; скрытых открытых вопросов нет; мусорных `TODO/TBD/FIXME` в `specs/` нет.
 6. Список расхождений реализации с User Stories и приоритеты будущего Work Plan исправлений кода вынесены в `Implementation_Alignment_Proposal.md` (обзорный проход по контурам). Этот план не создан и не запущен.

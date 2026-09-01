@@ -32,9 +32,11 @@ Work Plans отвечают на вопрос: в каком порядке пе
 
 1. `active/Work_Plan_Block_1_Lightweight_Launch.md` - минимальный боевой запуск витрины, CRM, кухни и административного контура.
 2. `active/Work_Plan_Block_2_Ops_Auth_Polish.md` - операционная доводка, Realtime, служебные логины, навигация и адаптивность.
-3. `active/Work_Plan_User_Stories_Coverage_Alignment.md` - последовательное выравнивание и дополнение User Stories: одиннадцать эпиков в восьми последовательных Git-группах.
+
+Сопутствующий документ: `active/Implementation_Alignment_Proposal.md` - обзор расхождений текущей реализации с утверждёнными User Stories и приоритеты будущего Work Plan исправлений кода (не Work Plan, работу не запускает).
 
 ## Завершенные планы
 
 1. `completed/Work_Plan_Code_Readiness.md` - единый план из семи последовательных групп подготовки проекта к написанию кода на Vercel и Supabase.
 2. `completed/Work_Plan_MVP_Order_Flow.md` - план реализации сквозного MVP-потока заказа (все 6 групп функций полностью реализованы и проверены).
+3. `completed/Work_Plan_User_Stories_Coverage_Alignment.md` - последовательное выравнивание и дополнение User Stories: одиннадцать эпиков в восьми последовательных Git-группах (завершён 2026-09-01, все группы смёржены). Изменял только слой документации `specs/`.

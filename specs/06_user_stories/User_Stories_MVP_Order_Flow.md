@@ -10,7 +10,7 @@
 > заказу и чату по паре «номер заказа + код доступа» (US-02, §4 п.3).
 
 > **[Правка — 2026-09-01]** Эпик D плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: перегруженная
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: перегруженная
 > `US-02` ужата до краткой сквозной истории; пошаговые сценарии оформления заказа
 > вынесены в `User_Stories_Order_And_Client_Access.md`.
 

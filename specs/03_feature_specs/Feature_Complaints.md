@@ -7,7 +7,7 @@
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `Feature_Order_CRM.md`, `Feature_Resolution_Department.md`
 
 > **[Правка — 2026-09-01] Эпик J плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Явно
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Явно
 > зафиксировано, что вложения и фото-доказательства к жалобе в MVP не входят и
 > отнесены к post-MVP (§3.2, §18 п. 8). Ранее вложения по жалобам упоминались только
 > в `../04_technical_specs/Technical_MVP_Implementation_Decisions.md` §11 п. 4 без

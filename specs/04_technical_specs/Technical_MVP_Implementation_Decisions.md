@@ -6,7 +6,7 @@
 > **Версия**: 1.6
 
 > **[Правка — 2026-09-01] Эпик J плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** §11 п. 4:
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** §11 п. 4:
 > убрано неподдержанное верхним слоем обещание хранить вложения по жалобам и
 > возвратам. `Feature_Complaints.md` v1.1 §3.2/§18 относит доказательства к жалобе к
 > post-MVP; Feature Spec возврата фото не предусматривает. Supabase Storage в MVP
