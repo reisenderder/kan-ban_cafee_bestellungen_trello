@@ -2,8 +2,8 @@
 
 > **Статус**: Проверено и зафиксировано (Группа 4: Данные, Auth и безопасность Supabase)
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-08-29
-> **Версия**: 1.3
+> **Дата обновления**: 2026-09-01
+> **Версия**: 1.4
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Order_Entry.md`, `../03_feature_specs/Feature_Order_Statuses.md`, `../03_feature_specs/Feature_Menu_Management.md`, `../03_feature_specs/Feature_Kitchen_Ticket.md`, `../03_feature_specs/Feature_Payment_Flow.md`, `Technical_MVP_Implementation_Decisions.md`
 
 > **[Правка Блока 2 — 2026-08-29]** Правка под пункт 7 плана
@@ -78,6 +78,9 @@
 * `isDiscountOrder`;
 * `sourceReturnedOrderId` (nullable);
 * `riskWarningLevel`;
+* `cookingStartedAt` (`cooking_started_at`, nullable до перехода в `Готовится`);
+* `cookingCompletedAt` (`cooking_completed_at`, nullable до готовности);
+* `cookingTargetMinutes` (`cooking_target_minutes`, норматив, зафиксированный при старте приготовления);
 * `closedAt`.
 
 `orderNumber` должен быть понятным клиенту и использоваться для клиентского чата и отслеживания.
@@ -252,11 +255,13 @@
 | ticket_number | serial | да | Человеко-читаемый номер чека |
 | printed_at | timestamptz | да | Момент печати / передачи на кухню |
 | printed_by | uuid | да | FK → auth.users.id (менеджер, который передал) |
-| status | enum kitchen_ticket_status | да | PRINTED, READY |
-| marked_ready_at | timestamptz | нет | Момент ручной отметки менеджером «Готов» |
-| marked_ready_by | uuid | нет | FK → auth.users.id (менеджер, который отметил) |
+| status | enum kitchen_ticket_status | да | PRINTED, COOKING, READY |
+| marked_ready_at | timestamptz | нет | Момент фиксации готовности менеджером или поваром |
+| marked_ready_by | uuid | нет | FK → auth.users.id (менеджер или повар, который отметил) |
 
-Примечание: Кухня работает без экранов (бумажная кухня). Статус COOKING не нужен — менеджер сразу отмечает READY.
+`KitchenTicket` фиксирует бумажный артефакт, если менеджер сформировал или распечатал чек. KDS строит очередь из рабочего `Order`, его позиций и снимков меню, поэтому электронный путь не требует фиктивной печати. Бумажный и электронный пути сходятся в одном lifecycle: переход в `Готовится` фиксирует `cooking_started_at` и норматив, а переход в `Готов к доставке` однократно фиксирует `cooking_completed_at`.
+
+Повторная команда готовности для уже готового заказа возвращает существующий результат и не добавляет вторую запись в `OrderStatusHistory` или `OrderEventLog`. `actualMinutes` рассчитывается из сохраненных серверных меток времени и не хранится как независимо изменяемое поле.
 
 ---
 
