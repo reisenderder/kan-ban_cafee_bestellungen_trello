@@ -4,7 +4,7 @@
 > **Дата проверки**: 2026-09-01
 > **Предыдущая проверка**: 2026-07-25 (Группа 2 плана `Work_Plan_Code_Readiness.md`)
 > **Проверяемый раздел**: `specs/06_user_stories/`
-> **Цель проверки**: сверить весь слой User Stories с Feature Specs, Technical Specs и правилами `specs/RULES.md` по итогам эпиков A–J плана `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.
+> **Цель проверки**: сверить весь слой User Stories с Feature Specs, Technical Specs и правилами `specs/RULES.md` по итогам эпиков A–J плана `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.
 
 ---
 

@@ -13,7 +13,7 @@
 > витрине (§11, §16 п.1). Подробности — `Feature_Client_Chat.md` §6.1.
 
 > **[Правка — 2026-09-01]** Эпик E плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: доступ по одному
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: доступ по одному
 > заказу за раз с чужого устройства, перевыпуск кода менеджером, срок доступа совпадает
 > со сроком чата (§16 пп. 7–8).
 

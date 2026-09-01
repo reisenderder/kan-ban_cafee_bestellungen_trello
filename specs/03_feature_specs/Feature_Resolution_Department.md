@@ -7,7 +7,7 @@
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `Feature_Order_Entry.md`, `Feature_Contact_Confirmation.md`, `Feature_Order_CRM.md`, `Feature_Courier_Delivery.md`
 
 > **[Правка — 2026-09-01] Эпик F плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
 > маршрутизации при неуказанном формате обращения приведено в соответствие с
 > `../02_functional_map/Functional_Map.md` v1.7 §5.1 и §5.5: дежурных офицера
 > всегда два — мужского и женского направления; кейс идёт к офицеру того

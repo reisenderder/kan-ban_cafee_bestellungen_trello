@@ -13,7 +13,7 @@
 > RLS и код доступа клиента к заказу (§18 пп. 8–11).
 
 > **[Правка — 2026-09-01]** Эпик E плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: rate limiting
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: rate limiting
 > доступа по паре «номер + код», перевыпуск кода менеджером из карточки заказа, срок
 > доступа = срок чата (§9, §18 пп. 12–14).
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`, `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Order_CRM.md`, `../03_feature_specs/Feature_Courier_Delivery.md`, `../03_feature_specs/Feature_Resolution_Department.md`, `../03_feature_specs/Feature_Complaints.md`, `../03_feature_specs/Feature_Client_Chat.md`, `../03_feature_specs/Feature_Route_Batching.md`, `Technical_MVP_Implementation_Decisions.md`

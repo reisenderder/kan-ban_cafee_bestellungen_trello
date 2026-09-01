@@ -7,7 +7,7 @@
 > **Источник**: `../01_global_spec/Global_Spec.md`, `../02_functional_map/Functional_Map.md`
 
 > **[Правка — 2026-09-01] Эпик F плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Правило
 > маршрутизации возможного урегулирования при неуказанном формате обращения
 > приведено в соответствие с `../02_functional_map/Functional_Map.md` v1.7 §5.1/§5.5
 > и `Feature_Resolution_Department.md` v1.2: ситуация попадает в очередь дежурного

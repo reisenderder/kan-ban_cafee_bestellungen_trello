@@ -7,7 +7,7 @@
 > **Источник**: `../03_feature_specs/Feature_Contact_Confirmation.md`, `../03_feature_specs/Feature_Order_Entry.md`, `Technical_Order_Data_Model.md`, `Technical_MVP_Implementation_Decisions.md`
 
 > **[Правка — 2026-09-01] Эпик F плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** §7:
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** §7:
 > уточнено, что при неуказанном формате обращения неподтверждённая попытка идёт в
 > очередь дежурного офицера **мужского направления** с маркером «Формат не указан»
 > (без присвоения пола) — согласовано с `Technical_Risk_Resolution.md` v1.2 и

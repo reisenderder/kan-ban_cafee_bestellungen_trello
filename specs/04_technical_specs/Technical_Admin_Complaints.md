@@ -7,7 +7,7 @@
 > **Источник**: `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Complaints.md`, `Technical_Access_Audit.md`
 
 > **[Правка — 2026-09-01] Эпик K плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Enum
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`.** Enum
 > `complaint_category` и `complaint_status` в §4 приведены в соответствие с
 > `../03_feature_specs/Feature_Complaints.md` §7 (семь категорий) и §14 (шесть
 > статусов). Ранее таблица давала пять категорий и четыре статуса — расхождение

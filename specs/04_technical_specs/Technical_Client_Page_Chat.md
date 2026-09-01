@@ -12,7 +12,7 @@
 > канала (§2, §7 п.2). Код выдаётся после подтверждения канала.
 
 > **[Правка — 2026-09-01]** Эпик E плана
-> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`: rate limiting
+> `../../work_plans/completed/Work_Plan_User_Stories_Coverage_Alignment.md`: rate limiting
 > ввода пары «номер + код», перевыпуск кода менеджером из CRM, срок доступа = закрытие
 > заказа + 30 дней, доступ по одному заказу за раз (§2, §7 пп. 6–8).
 
