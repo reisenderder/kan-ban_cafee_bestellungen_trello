@@ -2,9 +2,16 @@
 
 > **Статус**: Проверено и зафиксировано
 > **Дата создания**: 2026-07-21
-> **Дата обновления**: 2026-07-26
-> **Версия**: 1.1
+> **Дата обновления**: 2026-09-01
+> **Версия**: 1.2
 > **Источник**: `../03_feature_specs/Feature_Admin_Control.md`, `../03_feature_specs/Feature_Complaints.md`, `Technical_Access_Audit.md`
+
+> **[Правка — 2026-09-01] Эпик K плана
+> `../../work_plans/active/Work_Plan_User_Stories_Coverage_Alignment.md`.** Enum
+> `complaint_category` и `complaint_status` в §4 приведены в соответствие с
+> `../03_feature_specs/Feature_Complaints.md` §7 (семь категорий) и §14 (шесть
+> статусов). Ранее таблица давала пять категорий и четыре статуса — расхождение
+> нижнего слоя с Feature Spec, выявленное финальным аудитом.
 
 ---
 
@@ -77,14 +84,20 @@ Hard delete через продуктовый интерфейс отсутст�
 | order_id | uuid | нет | FK → orders.id (жалоба может быть не привязана к заказу) |
 | customer_contact_id | uuid | нет | FK → customer_contacts.id |
 | contact_channel | enum complaint_channel | да | WEBSITE_FORM, TELEGRAM, EMAIL, PHONE |
-| category | enum complaint_category | да | DELIVERY, FOOD_QUALITY, SERVICE, PAYMENT, OTHER |
+| category | enum complaint_category | да | FOOD_QUALITY, DELAY, DELIVERY, PAYMENT, COMMUNICATION, CONFLICT, OTHER — соответствуют `Feature_Complaints.md` §7 (Качество блюда, Задержка, Доставка, Оплата, Коммуникация, Конфликт, Другое) |
 | complaint_text | text | да | Текст жалобы клиента |
-| status | enum complaint_status | да | NEW, IN_REVIEW, RESOLVED, REJECTED |
+| status | enum complaint_status | да | NEW, RECEIVED, IN_REVIEW, AWAITING_CUSTOMER, CLOSED, ARCHIVED — соответствуют `Feature_Complaints.md` §14 (Новая, Получена администратором, В работе, Ожидает клиента, Закрыта, Архив) |
 | assigned_admin_id | uuid | нет | FK → auth.users.id (администратор, обрабатывающий жалобу) |
-| resolution_notes | text | нет | Заметки по результату рассмотрения |
+| assigned_worker_id | uuid | нет | FK → auth.users.id (работник, назначенный только для связи; прав закрытия/архива не даёт) |
+| result | text | нет | Конкретный результат обработки из списка `Feature_Complaints.md` §13 |
+| resolution_notes | text | нет | Свободные заметки по рассмотрению |
 | created_at | timestamptz | да | Момент подачи жалобы |
+| acknowledged_at | timestamptz | нет | Момент отправки клиенту автоматического подтверждения получения |
 | resolved_at | timestamptz | нет | Момент закрытия жалобы |
-| deleted_at | timestamptz | нет | Soft delete (не физическое удаление) |
+| archived_at | timestamptz | нет | Момент архивирования |
+| deleted_at | timestamptz | нет | Soft delete (логическое скрытие, не физическое удаление) |
+| delete_reason | text | нет | Причина логического скрытия (обязательна при `deleted_at`) |
+| deleted_by | uuid | нет | FK → auth.users.id (администратор-исполнитель скрытия) |
 
 ---
 
@@ -120,3 +133,4 @@ Hard delete через продуктовый интерфейс отсутст�
 5. Экспорт журналов администратора на первом этапе запрещен. Если экспорт понадобится позже, он должен быть отдельной функцией с ограничением прав и причиной экспорта.
 6. Последнего активного администратора нельзя отключить, архивировать или перевести на другую роль.
 7. `AuditLog` сохраняется независимо от состояния сотрудника и не удаляется вместе с его карточкой.
+8. Enum `complaint_category` (семь значений) и `complaint_status` (шесть значений) следуют спискам `../03_feature_specs/Feature_Complaints.md` §7 и §14. Конкретный результат обработки жалобы хранится в поле `result` из списка §13; `resolution_notes` остаётся для свободных заметок. Вложения к жалобе в MVP не хранятся (`Feature_Complaints.md` §18 п. 8).

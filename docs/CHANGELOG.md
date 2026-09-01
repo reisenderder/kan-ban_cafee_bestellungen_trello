@@ -17,6 +17,17 @@
 
 ## 🚀 История версий
 
+### 📌 Финальный аудит покрытия User Stories — 2026-09-01
+
+##### ⚙️ [FEATURE]
+* **Эпик K — финальный аудит покрытия**: построена матрица трассировки `specs/06_user_stories/User_Stories_Traceability_Matrix.md` — все 12 принципов Global Spec §5 доведены до проверяемых историй, у всех 72 историй (в 8 рабочих документах) есть источник верхнего уровня, все 15 Feature Specs имеют сценарное покрытие. Эпик подтверждён пользователем 2026-09-01; завершение всего плана `Work_Plan_User_Stories_Coverage_Alignment.md` ожидает отдельного ручного подтверждения.
+* Оба check report переписаны под актуальное состояние (было 38 историй в 4 документах — стало 72 в 8): `specs/06_user_stories/User_Stories_All_Check_Report.md` (структура, покрытие Feature/Technical Specs, устранённые противоречия, §7 — девять сведённых post-MVP границ со ссылками на верхние документы) и `specs/06_user_stories/User_Stories_MVP_Order_Flow_Check_Report.md` (состав 13 сквозных историй, изменения эпиков D–J).
+* Обновлены индексы: `specs/06_user_stories/README.md` (разбит на рабочие документы и отчёты, добавлена матрица), `specs/README.md` (статус слоя User Stories), `work_plans/active/README.md` (сопутствующие документы).
+* Добавлен `work_plans/active/Implementation_Alignment_Proposal.md` — предложение (не Work Plan) со списком расхождений текущей реализации с утверждёнными User Stories по контурам и четырьмя приоритетами будущего Work Plan исправлений кода. План не создан и не запущен; требует отдельного подтверждения пользователя.
+
+##### 🗄️ [DATABASE]
+* `specs/04_technical_specs/Technical_Admin_Complaints.md` v1.2 §4: enum `complaint_category` (семь значений) и `complaint_status` (шесть значений) приведены к спискам `Feature_Complaints.md` §7/§14 — последнее расхождение Feature ↔ Technical, найденное в эпике J. В схему `complaints` добавлены поля под уже утверждённое поведение Feature Spec (`result`, `assigned_worker_id`, `acknowledged_at`, `archived_at`, `delete_reason`, `deleted_by`). Миграций пока не требуется — таблица `complaints` в боевой БД ещё не создавалась.
+
 ### 📌 User Stories пути жалобы клиента — 2026-09-01
 
 ##### ⚙️ [FEATURE]
